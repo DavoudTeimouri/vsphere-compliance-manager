@@ -12,14 +12,14 @@
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.26+-326CE5.svg)](https://kubernetes.io)
 [![Docker](https://img.shields.io/badge/Docker-24+-2496ED.svg)](https://docker.com)
-[![CI](https://github.com/your-org/vsphere-compliance-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/vsphere-compliance-manager/actions)
-[![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](https://github.com/your-org/vsphere-compliance-manager)
+[![CI](https://github.com/DavoudTeimouri/vsphere-compliance-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/DavoudTeimouri/vsphere-compliance-manager/actions)
+[![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](https://github.com/DavoudTeimouri/vsphere-compliance-manager)
 
 ---
 
 **Automate VMware DRS Anti-Affinity rules and Storage placement compliance across your entire vCenter infrastructure.**
 
-[📖 Documentation](#documentation) · [🚀 Quick Start](#quick-start) · [🐛 Report Bug](https://github.com/your-org/vsphere-compliance-manager/issues) · [💡 Request Feature](https://github.com/your-org/vsphere-compliance-manager/issues)
+[📖 Documentation](#documentation) · [🚀 Quick Start](#quick-start) · [🐛 Report Bug](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues) · [💡 Request Feature](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues)
 
 </div>
 
@@ -148,7 +148,7 @@ See [docs/architecture/](docs/architecture/) for detailed diagrams.
 ### 1 — Clone the repository
 
 ```bash
-git clone https://github.com/your-org/vsphere-compliance-manager.git
+git clone https://github.com/DavoudTeimouri/vsphere-compliance-manager.git
 cd vsphere-compliance-manager
 ```
 
@@ -205,7 +205,7 @@ kubectl get svc vcm-frontend -n vcm
 
 ```bash
 # Add the chart repo (if published)
-helm repo add vcm https://your-org.github.io/vsphere-compliance-manager
+helm repo add vcm https://DavoudTeimouri.github.io/vsphere-compliance-manager
 helm repo update
 
 # Install with custom values
