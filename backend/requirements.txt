@@ -1,0 +1,39 @@
+# Web framework
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9
+
+# Database
+sqlalchemy==2.0.27
+alembic==1.13.1
+psycopg2-binary==2.9.9
+
+# Redis & caching
+redis==5.0.1
+
+# Auth & security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography==42.0.2
+
+# VMware
+pyVmomi==8.0.2.0.1
+
+# LDAP
+python-ldap==3.4.4
+
+# Scheduling
+apscheduler==3.10.4
+
+# Validation
+pydantic==2.6.1
+pydantic-settings==2.2.1
+email-validator==2.1.0.post1
+
+# Utilities
+python-dotenv==1.0.1
+httpx==0.26.0
+
+# Reporting
+reportlab==4.1.0
+openpyxl==3.1.2

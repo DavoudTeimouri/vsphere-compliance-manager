@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vcm-config
+  namespace: vcm
+data:
+  APP_ENV: "production"
+  LOG_LEVEL: "INFO"
+  LOG_FORMAT: "json"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "480"
+  ANALYSIS_TIMEOUT_SECONDS: "3600"
+  ANALYSIS_MAX_WORKERS: "4"
+  ANALYSIS_SCHEDULE_CRON: "0 2 * * *"
+  UPLOAD_PATH: "/app/uploads"
+  DATABASE_URL: "postgresql://vcm:vcm_pass@vcm-postgres:5432/vcm_db"
+  REDIS_URL: "redis://vcm-redis:6379/0"
+---
+# Template only — replace values before applying
+# Use: kubectl create secret generic vcm-secrets --from-env-file=.env -n vcm
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vcm-secrets
+  namespace: vcm
+type: Opaque
+stringData:
+  SECRET_KEY: "REPLACE_ME"
+  ENCRYPTION_KEY: "REPLACE_ME"
+  ADMIN_PASSWORD: "REPLACE_ME"
+  LDAP_BIND_PASSWORD: ""

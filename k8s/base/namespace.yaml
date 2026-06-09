@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vcm
+  labels:
+    app.kubernetes.io/name: vsphere-compliance-manager
+    app.kubernetes.io/managed-by: kustomize
