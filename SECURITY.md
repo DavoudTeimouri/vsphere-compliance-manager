@@ -11,7 +11,7 @@
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-To report a vulnerability, email **security@DavoudTeimouri.com** with:
+To report a vulnerability, **[open a private security advisory](https://github.com/DavoudTeimouri/vsphere-compliance-manager/security/advisories/new)** or open an issue at **[github.com/DavoudTeimouri/vsphere-compliance-manager/issues](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues)** with the label `security` and include:
 
 - Description of the vulnerability
 - Steps to reproduce
