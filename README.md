@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/screenshots/logo.svg" alt="VCM Logo" width="220" height="220" />
+<img src="docs/screenshots/logo.svg" alt="VCM Logo" width="320" height="320" />
 
 # vSphere Compliance Manager
 
