@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/screenshots/logo.svg" alt="VCM Logo" width="120" height="120" />
+<img src="docs/screenshots/logo.svg" alt="VCM Logo" width="220" height="220" />
 
 # vSphere Compliance Manager
 
@@ -69,10 +69,10 @@
 
 * Pattern-based VM grouping using **configurable Regex**
 * Auto-generates Anti-Affinity rules per cluster, per VM group
-* Rule sizing: `VMs per rule = host\_count − 1` (ensures spread across all hosts)
+* Rule sizing: `VMs per rule = host\\\_count − 1` (ensures spread across all hosts)
 * Skips groups with a single VM (reported, not errored)
 * Deletes stale VCM-managed rules before re-applying
-* Preserves manually created rules (only touches `VCM-AAR-\*` prefixed rules)
+* Preserves manually created rules (only touches `VCM-AAR-\\\*` prefixed rules)
 
 ### 🗄️ Storage Compliance Engine
 
@@ -217,10 +217,10 @@ helm repo add vcm https://DavoudTeimouri.github.io/vsphere-compliance-manager
 helm repo update
 
 # Install with custom values
-helm install vcm vcm/vsphere-compliance-manager \\
-  --namespace vcm --create-namespace \\
-  --values deploy/helm/values.yaml \\
-  --set secrets.secretKey="your-secret-key" \\
+helm install vcm vcm/vsphere-compliance-manager \\\\
+  --namespace vcm --create-namespace \\\\
+  --values deploy/helm/values.yaml \\\\
+  --set secrets.secretKey="your-secret-key" \\\\
   --set vcenter.defaultHost="vcenter.example.com"
 ```
 
@@ -234,38 +234,38 @@ Copy `.env.example` to `.env` and fill in the values:
 
 ```dotenv
 # ── Application ──────────────────────────────────────────
-SECRET\_KEY=change-me-to-a-long-random-string-in-production
-ENCRYPTION\_KEY=                         # Auto-generated if empty
-ACCESS\_TOKEN\_EXPIRE\_MINUTES=480
+SECRET\\\_KEY=change-me-to-a-long-random-string-in-production
+ENCRYPTION\\\_KEY=                         # Auto-generated if empty
+ACCESS\\\_TOKEN\\\_EXPIRE\\\_MINUTES=480
 
 # ── Database ─────────────────────────────────────────────
-DATABASE\_URL=postgresql://vcm:vcm\_pass@postgres:5432/vcm\_db
+DATABASE\\\_URL=postgresql://vcm:vcm\\\_pass@postgres:5432/vcm\\\_db
 
 # ── Redis ────────────────────────────────────────────────
-REDIS\_URL=redis://redis:6379/0
+REDIS\\\_URL=redis://redis:6379/0
 
 # ── Initial Admin User ───────────────────────────────────
-ADMIN\_USERNAME=admin
-ADMIN\_PASSWORD=VCM@admin2024!
-ADMIN\_EMAIL=admin@example.com
+ADMIN\\\_USERNAME=admin
+ADMIN\\\_PASSWORD=VCM@admin2024!
+ADMIN\\\_EMAIL=admin@example.com
 
 # ── LDAP / Active Directory (optional) ───────────────────
-LDAP\_ENABLED=false
-LDAP\_SERVER\_URL=ldap://dc.example.com:389
-LDAP\_BASE\_DN=DC=example,DC=com
-LDAP\_BIND\_DN=CN=svc-vcm,OU=Service Accounts,DC=example,DC=com
-LDAP\_BIND\_PASSWORD=
-LDAP\_USER\_FILTER=(sAMAccountName={username})
-LDAP\_GROUP\_ADMIN=CN=vcm-admins,OU=Groups,DC=example,DC=com
-LDAP\_GROUP\_OPERATOR=CN=vcm-operators,OU=Groups,DC=example,DC=com
-LDAP\_USE\_SSL=false
+LDAP\\\_ENABLED=false
+LDAP\\\_SERVER\\\_URL=ldap://dc.example.com:389
+LDAP\\\_BASE\\\_DN=DC=example,DC=com
+LDAP\\\_BIND\\\_DN=CN=svc-vcm,OU=Service Accounts,DC=example,DC=com
+LDAP\\\_BIND\\\_PASSWORD=
+LDAP\\\_USER\\\_FILTER=(sAMAccountName={username})
+LDAP\\\_GROUP\\\_ADMIN=CN=vcm-admins,OU=Groups,DC=example,DC=com
+LDAP\\\_GROUP\\\_OPERATOR=CN=vcm-operators,OU=Groups,DC=example,DC=com
+LDAP\\\_USE\\\_SSL=false
 
 # ── Analysis Defaults ────────────────────────────────────
-ANALYSIS\_SCHEDULE\_CRON=0 2 \* \* \*        # Daily at 02:00
-ANALYSIS\_TIMEOUT\_SECONDS=3600
+ANALYSIS\\\_SCHEDULE\\\_CRON=0 2 \\\* \\\* \\\*        # Daily at 02:00
+ANALYSIS\\\_TIMEOUT\\\_SECONDS=3600
 ```
 
-All sensitive values in the database are additionally encrypted with the `ENCRYPTION\_KEY`.
+All sensitive values in the database are additionally encrypted with the `ENCRYPTION\\\_KEY`.
 
 \---
 
@@ -277,7 +277,7 @@ Users are created via the Admin panel or seeded at startup. Passwords are hashed
 
 ### LDAP / Active Directory
 
-Set `LDAP\_ENABLED=true` and configure the LDAP settings. On first login, LDAP users are auto-provisioned in the local database with the role mapped from their group membership:
+Set `LDAP\\\_ENABLED=true` and configure the LDAP settings. On first login, LDAP users are auto-provisioned in the local database with the role mapped from their group membership:
 
 ```
 LDAP group: vcm-admins   → Role: Admin
@@ -301,8 +301,8 @@ Go to **Settings → Patterns**. Add Regex patterns to identify VM groups:
 
 |Pattern Type|Example Regex|Matches|
 |-|-|-|
-|VM Name|`^(WEB)-\\d+`|WEB-01, WEB-02, ...|
-|VM Name|`^(\[A-Z]+-\[A-Z]+)-`|APP-PROD-01, DB-PROD-02|
+|VM Name|`^(WEB)-\\\\d+`|WEB-01, WEB-02, ...|
+|VM Name|`^(\\\[A-Z]+-\\\[A-Z]+)-`|APP-PROD-01, DB-PROD-02|
 |Datastore|`^DS-(PROD\|DR)-`|DS-PROD-01, DS-DR-01|
 
 ### 3\. Run Analysis
@@ -362,7 +362,7 @@ cd backend
 
 # Create virtualenv
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\\Scripts\\activate
+source .venv/bin/activate        # Windows: .venv\\\\Scripts\\\\activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -451,10 +451,10 @@ We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) 
 |-|-|
 |`main`|Production-ready, tagged releases|
 |`develop`|Integration branch for features|
-|`feat/\*`|New features|
-|`fix/\*`|Bug fixes|
-|`hotfix/\*`|Critical production fixes|
-|`release/\*`|Release preparation|
+|`feat/\\\*`|New features|
+|`fix/\\\*`|Bug fixes|
+|`hotfix/\\\*`|Critical production fixes|
+|`release/\\\*`|Release preparation|
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
 
