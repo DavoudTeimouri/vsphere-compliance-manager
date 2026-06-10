@@ -11,7 +11,7 @@
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-To report a vulnerability, email **security@your-org.com** with:
+To report a vulnerability, email **security@DavoudTeimouri.com** with:
 
 - Description of the vulnerability
 - Steps to reproduce

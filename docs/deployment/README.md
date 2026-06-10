@@ -8,7 +8,7 @@
 
 ```bash
 # Clone
-git clone https://github.com/your-org/vsphere-compliance-manager.git
+git clone https://github.com/DavoudTeimouri/vsphere-compliance-manager.git
 cd vsphere-compliance-manager
 
 # Configure
@@ -90,7 +90,7 @@ helm install vcm ./deploy/helm \
   --namespace vcm --create-namespace \
   --set app.secretKey="$(openssl rand -base64 32)" \
   --set app.adminPassword="VCM@admin2024!" \
-  --set ingress.host="vcm.your-domain.com"
+  --set ingress.host="vcm.vcm.DavoudTeimouri.ir"
 
 # Upgrade
 helm upgrade vcm ./deploy/helm --reuse-values \

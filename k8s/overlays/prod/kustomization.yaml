@@ -26,13 +26,13 @@ patches:
     patch: |-
       - op: replace
         path: /spec/rules/0/host
-        value: vcm.your-domain.com
+        value: vcm.vcm.DavoudTeimouri.ir
       - op: replace
         path: /spec/tls/0/hosts/0
-        value: vcm.your-domain.com
+        value: vcm.vcm.DavoudTeimouri.ir
 
 images:
-  - name: ghcr.io/your-org/vsphere-compliance-manager/backend
+  - name: ghcr.io/DavoudTeimouri/vsphere-compliance-manager/backend
     newTag: "1.0.0"
-  - name: ghcr.io/your-org/vsphere-compliance-manager/frontend
+  - name: ghcr.io/DavoudTeimouri/vsphere-compliance-manager/frontend
     newTag: "1.0.0"

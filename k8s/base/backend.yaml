@@ -28,7 +28,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: backend
-          image: ghcr.io/your-org/vsphere-compliance-manager/backend:latest
+          image: ghcr.io/DavoudTeimouri/vsphere-compliance-manager/backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

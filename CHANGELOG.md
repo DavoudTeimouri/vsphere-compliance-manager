@@ -42,5 +42,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/your-org/vsphere-compliance-manager/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/your-org/vsphere-compliance-manager/releases/tag/v1.0.0
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/releases/tag/v1.0.0
