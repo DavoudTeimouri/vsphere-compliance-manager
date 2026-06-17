@@ -8,11 +8,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# System deps (pyVmomi & ldap need some libs)
+# curl برای healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libldap2-dev \
-    libsasl2-dev \
-    libssl-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -36,7 +33,6 @@ FROM deps AS production
 
 COPY . .
 
-# Create non-root user
 RUN addgroup --system vcm && adduser --system --ingroup vcm vcm && \
     mkdir -p /app/uploads && chown -R vcm:vcm /app
 

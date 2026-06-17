@@ -11,6 +11,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] — 2026-06-17
+
+### Fixed
+- Replace `python-ldap` (requires C compiler + system libs) with `ldap3` (pure Python)
+- Remove `libldap2-dev` and `libsasl2-dev` from Dockerfile — Docker build now succeeds
+- Upgrade all GitHub Actions to Node.js 24 compatible versions:
+  - `actions/checkout` → v4.2.2
+  - `actions/setup-python` → v5.3.0
+  - `actions/setup-node` → v4.2.0
+  - `actions/upload-artifact` → v4.6.0
+  - `docker/login-action` → v3.3.0
+  - `docker/setup-buildx-action` → v3.9.0
+  - `docker/metadata-action` → v5.6.1
+  - `docker/build-push-action` → v6.14.0
+  - `codecov/codecov-action` → v5.1.2
+  - `softprops/action-gh-release` → v2.2.1
+- Switch frontend Node.js from 20 (deprecated) to 22 in CI
+
+---
+
 ## [1.2.0] — 2026-06-17
 
 ### Added
@@ -79,7 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/releases/tag/v1.0.0

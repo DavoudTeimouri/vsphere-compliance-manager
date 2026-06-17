@@ -11,9 +11,6 @@ permissions:
 
 jobs:
 
-  # ────────────────────────────────────────────────────────
-  # 1. Build & push Docker images with the version tag
-  # ────────────────────────────────────────────────────────
   docker-release:
     name: Docker — Build & Push Release Images
     runs-on: ubuntu-latest
@@ -22,22 +19,21 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3.9.0
 
-      # ── Backend ──────────────────────────────────────
-      - name: Backend — Docker metadata
+      - name: Backend — metadata
         id: meta-backend
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.6.1
         with:
           images: ghcr.io/${{ github.repository }}/backend
           tags: |
@@ -46,20 +42,18 @@ jobs:
             type=raw,value=latest
 
       - name: Backend — Build & push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6.14.0
         with:
           context: ./backend
           target: production
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── Frontend ─────────────────────────────────────
-      - name: Frontend — Docker metadata
+      - name: Frontend — metadata
         id: meta-frontend
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.6.1
         with:
           images: ghcr.io/${{ github.repository }}/frontend
           tags: |
@@ -68,21 +62,17 @@ jobs:
             type=raw,value=latest
 
       - name: Frontend — Build & push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6.14.0
         with:
           context: ./frontend
           target: production
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
           build-args: |
             VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL || 'http://localhost:8000' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ────────────────────────────────────────────────────────
-  # 2. Create the GitHub Release with CHANGELOG notes
-  # ────────────────────────────────────────────────────────
   github-release:
     name: GitHub — Create Release
     runs-on: ubuntu-latest
@@ -91,66 +81,51 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
 
-      - name: Extract version from tag
+      - name: Extract version
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Extract CHANGELOG notes for this version
+      - name: Extract CHANGELOG notes
         id: changelog
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          # Extract lines between this version header and the next one
           NOTES=$(awk "/^## \[$VERSION\]/{flag=1;next}/^## \[/{flag=0}flag" CHANGELOG.md \
-                  | sed '/^---$/d' | sed '/^$/d')
-
+                  | sed '/^---$/d' | sed '/^[[:space:]]*$/d')
           if [ -z "$NOTES" ]; then
-            NOTES="See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details."
+            NOTES="See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)"
           fi
-
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Build release body
-        id: body
-        run: |
-          cat << 'BODY' >> release_body.md
-          ## What's Changed
-
-          ${{ steps.changelog.outputs.notes }}
-
-          ## Docker Images
-
-          Pull the images for this release:
-
-          ```bash
-          docker pull ghcr.io/${{ github.repository }}/backend:${{ steps.version.outputs.version }}
-          docker pull ghcr.io/${{ github.repository }}/frontend:${{ steps.version.outputs.version }}
-          ```
-
-          ## Quick Start
-
-          ```bash
-          git clone https://github.com/${{ github.repository }}.git
-          cd vsphere-compliance-manager
-          cp .env.example .env
-          # Edit .env with your values
-          docker compose up -d
-          ```
-
-          **Full documentation:** [docs/deployment/README.md](https://github.com/${{ github.repository }}/blob/main/docs/deployment/README.md)
-          BODY
-
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.2.1
         with:
           name: "v${{ steps.version.outputs.version }}"
-          body_path: release_body.md
+          body: |
+            ## What's Changed
+
+            ${{ steps.changelog.outputs.notes }}
+
+            ## Docker Images
+
+            ```bash
+            docker pull ghcr.io/${{ github.repository }}/backend:${{ steps.version.outputs.version }}
+            docker pull ghcr.io/${{ github.repository }}/frontend:${{ steps.version.outputs.version }}
+            ```
+
+            ## Quick Start
+
+            ```bash
+            git clone https://github.com/${{ github.repository }}.git
+            cd vsphere-compliance-manager
+            cp .env.example .env
+            docker compose up -d
+            ```
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           make_latest: ${{ !contains(github.ref_name, '-') }}
-          generate_release_notes: false

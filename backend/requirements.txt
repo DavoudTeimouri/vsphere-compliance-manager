@@ -19,8 +19,8 @@ cryptography==42.0.2
 # VMware
 pyVmomi==8.0.2.0.1
 
-# LDAP
-python-ldap==3.4.4
+# LDAP — pure Python, no system libs required
+ldap3==2.9.1
 
 # Scheduling
 apscheduler==3.10.4
