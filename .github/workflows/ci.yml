@@ -12,7 +12,10 @@ env:
 
 jobs:
 
-  # ── Backend ──────────────────────────────────────────────
+  # ────────────────────────────────────────────────────────
+  # BACKEND
+  # ────────────────────────────────────────────────────────
+
   backend-lint:
     name: Backend — Lint & Type Check
     runs-on: ubuntu-latest
@@ -21,17 +24,26 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
-      - run: pip install ruff mypy black
-      - run: ruff check .
-      - run: black --check .
-      - run: mypy app/ --ignore-missing-imports
+
+      - name: Install lint tools
+        run: pip install ruff mypy black
+
+      - name: Ruff — lint
+        run: ruff check .
+
+      - name: Black — format check
+        run: black --check .
+
+      - name: Mypy — type check
+        run: mypy app/ --ignore-missing-imports
 
   backend-test:
-    name: Backend — Test
+    name: Backend — Unit & Integration Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -49,31 +61,70 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
       redis:
         image: redis:7-alpine
         ports: ["6379:6379"]
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
+          --health-timeout 3s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: pip
-      - run: sudo apt-get install -y libldap2-dev libsasl2-dev
-      - run: pip install -r requirements.txt -r requirements-dev.txt
-      - run: |
-          export DATABASE_URL=postgresql://vcm:vcm_pass@localhost:5432/vcm_test
-          export REDIS_URL=redis://localhost:6379/0
-          export SECRET_KEY=ci-test-secret-key
-          pytest tests/unit/ -v --cov=app --cov-report=xml --cov-fail-under=75
-      - uses: codecov/codecov-action@v4
+
+      - name: Install system deps (LDAP)
+        run: sudo apt-get update && sudo apt-get install -y libldap2-dev libsasl2-dev
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
+          SECRET_KEY: ci-test-secret-key-32chars-padding
+          REDIS_URL: redis://localhost:6379/0
+        run: alembic upgrade head
+
+      - name: Run unit tests
+        env:
+          DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
+          SECRET_KEY: ci-test-secret-key-32chars-padding
+          REDIS_URL: redis://localhost:6379/0
+          LDAP_ENABLED: "false"
+        run: |
+          pytest tests/unit/ -v \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-fail-under=70
+
+      - name: Run integration tests
+        env:
+          DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
+          SECRET_KEY: ci-test-secret-key-32chars-padding
+          REDIS_URL: redis://localhost:6379/0
+          LDAP_ENABLED: "false"
+        run: |
+          pytest tests/integration/ -v --cov-append --cov=app --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
         with:
           file: backend/coverage.xml
           flags: backend
+          fail_ci_if_error: false
 
-  # ── Frontend ─────────────────────────────────────────────
+  # ────────────────────────────────────────────────────────
+  # FRONTEND
+  # ────────────────────────────────────────────────────────
+
   frontend-lint:
     name: Frontend — Lint & Type Check
     runs-on: ubuntu-latest
@@ -82,30 +133,48 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run type-check
+
+      - name: Install deps
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: TypeScript check
+        run: npm run type-check
 
   frontend-test:
-    name: Frontend — Test
+    name: Frontend — Tests
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm test -- --coverage
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          flags: frontend
+          fail_ci_if_error: false
 
   frontend-build:
     name: Frontend — Build
@@ -115,23 +184,41 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run build
 
-  # ── Docker Build & Push ──────────────────────────────────
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'http://localhost:8000' }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  # ────────────────────────────────────────────────────────
+  # DOCKER BUILD & PUSH TO GHCR
+  # ────────────────────────────────────────────────────────
+
   docker-build:
-    name: Docker — Build & Push
+    name: Docker — Build & Push to GHCR
     runs-on: ubuntu-latest
     needs: [backend-test, frontend-build]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     permissions:
       contents: read
       packages: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -145,6 +232,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # ── Backend image ─────────────────────────────────
       - name: Backend — Docker metadata
         id: meta-backend
         uses: docker/metadata-action@v5
@@ -153,7 +241,9 @@ jobs:
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
-            type=sha,prefix=sha-
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Backend — Build & push
         uses: docker/build-push-action@v5
@@ -165,7 +255,10 @@ jobs:
           labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
 
+      # ── Frontend image ────────────────────────────────
       - name: Frontend — Docker metadata
         id: meta-frontend
         uses: docker/metadata-action@v5
@@ -174,7 +267,9 @@ jobs:
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
-            type=sha,prefix=sha-
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Frontend — Build & push
         uses: docker/build-push-action@v5
@@ -184,6 +279,19 @@ jobs:
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
-          build-args: VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
+          build-args: |
+            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL || 'http://localhost:8000' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      # ── Summary ───────────────────────────────────────
+      - name: Write job summary
+        run: |
+          echo "## 🐳 Docker Images Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tags |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | \`${{ steps.meta-backend.outputs.tags }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`${{ steps.meta-frontend.outputs.tags }}\` |" >> $GITHUB_STEP_SUMMARY

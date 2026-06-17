@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] — 2026-06-17
+
+### Added
+- Complete CI workflow with backend lint, unit tests, integration tests, and coverage report
+- Complete Release workflow: builds Docker images with version tags then creates GitHub Release
+- Docker images published to GHCR with `latest`, `semver`, `branch`, and `sha` tags
+- SBOM and provenance attestation on all Docker images
+- Backend unit tests: `test_analysis_engine.py` (15 cases), `test_security.py` (12 cases)
+- Backend integration tests: `test_api.py` covering auth, users, dashboard, patterns
+- `pytest.ini` configuration
+- Frontend test setup with Vitest + jsdom + Testing Library
+- Frontend utility tests: `utils.test.ts` (14 cases)
+- `vitest.config.ts` with coverage reporting
+
+---
+
 ## [1.1.0] — 2026-06-17
 
 ### Added
@@ -63,6 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/releases/tag/v1.0.0
