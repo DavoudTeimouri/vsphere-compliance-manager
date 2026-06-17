@@ -9,12 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] — 2026-06-17
+
 ### Added
-- Initial public release
+- All backend API routers: `auth`, `users`, `vcenter`, `analysis`, `reports`, `settings`, `dashboard`
+- Core modules: `config.py`, `database.py`, `deps.py`, `scheduler.py`
+- Alembic migration setup (`alembic.ini` + `alembic/env.py`)
+- Database seed script with default admin user and sample patterns
+- JWT + LDAP dual authentication flow in auth router
+- DRS apply endpoint — creates Anti-Affinity rules via pyVmomi
+- Storage move approval workflow with audit trail
+- Report export in JSON and CSV formats
+- Logo upload endpoint (PNG, JPEG, SVG)
+- LDAP connection test endpoint
+- AES-256 encryption for all sensitive settings stored in DB
+- Frontend scaffold: `package.json`, `vite.config.ts`, `tsconfig.json`
+
+### Fixed
+- Removed broken `github.io` Helm repo reference from README
+- Replaced all email addresses with GitHub Issues links (SECURITY.md, CODE_OF_CONDUCT.md)
+- Replaced all `your-org` placeholders with `DavoudTeimouri`
+- Fixed logo path to `docs/screenshots/logo.svg` at 400×400
 
 ---
 
-## [1.0.0] — 2024-01-01
+## [1.0.0] — 2026-01-01
 
 ### Added
 - Core FastAPI backend with PostgreSQL persistence
@@ -42,5 +63,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/releases/tag/v1.0.0
