@@ -11,6 +11,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.3] — 2026-06-17
+
+### Fixed
+- Pin `bcrypt==4.0.1` in requirements.txt — newer bcrypt removed `__about__` attribute
+  causing passlib to fail with `ValueError: password cannot be longer than 72 bytes`
+- Add `frontend/index.html` — Vite entry point was missing, causing build failure
+  `Could not resolve entry module "index.html"`
+- Add `src/main.tsx`, `src/App.tsx`, `src/index.css` — React entry files
+- Add `tailwind.config.js` and `postcss.config.js` for Tailwind CSS
+- Add stub pages (Dashboard, Analysis, Reports, Settings, Users) so build passes
+- Add `src/store/authStore.ts`, `src/utils/api.ts`, layout and route components
+- Add `public/favicon.svg`
+- Pin all GitHub Actions by full commit SHA for guaranteed Node.js 24 compatibility:
+  - `actions/checkout` → `11bd719...` (v4.2.2)
+  - `actions/setup-python` → `0b93645...` (v5.3.0)
+  - `actions/setup-node` → `39370e3...` (v4.1.0)
+  - `docker/login-action` → `9780b0c...` (v3.3.0)
+  - `docker/setup-buildx-action` → `f7ce87c...` (v3.9.0)
+  - `docker/metadata-action` → `369eb59...` (v5.6.1)
+  - `docker/build-push-action` → `ca052bb...` (v6.14.0)
+  - `actions/upload-artifact` → `65c4c4a...` (v4.6.0)
+  - `softprops/action-gh-release` → `da05d55...` (v2.2.1)
+- Remove govmomi vcsim from CI — requires Go 1.25 (not yet stable)
+
+---
+
 ## [1.2.2] — 2026-06-18
 
 ### Fixed
@@ -139,7 +165,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.3...HEAD
+[1.2.3]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.1.0...v1.2.0

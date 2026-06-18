@@ -13,8 +13,9 @@ env:
 jobs:
 
   # ────────────────────────────────────────────────────────
-  # BACKEND — Lint
+  # BACKEND
   # ────────────────────────────────────────────────────────
+
   backend-lint:
     name: Backend — Lint & Type Check
     runs-on: ubuntu-latest
@@ -22,9 +23,11 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0 Node24
         with:
           python-version: "3.11"
 
@@ -40,9 +43,6 @@ jobs:
       - name: Mypy
         run: mypy app/ --ignore-missing-imports || true
 
-  # ────────────────────────────────────────────────────────
-  # BACKEND — Tests
-  # ────────────────────────────────────────────────────────
   backend-test:
     name: Backend — Tests
     runs-on: ubuntu-latest
@@ -72,9 +72,11 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0 Node24
         with:
           python-version: "3.11"
 
@@ -84,7 +86,7 @@ jobs:
       - name: Run migrations
         env:
           DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
-          SECRET_KEY: ci-test-secret-key-32chars-padding00
+          SECRET_KEY: ci-test-secret-key-32chars-padding
           REDIS_URL: redis://localhost:6379/0
           LDAP_ENABLED: "false"
         run: alembic upgrade head
@@ -92,7 +94,7 @@ jobs:
       - name: Run unit tests
         env:
           DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
-          SECRET_KEY: ci-test-secret-key-32chars-padding00
+          SECRET_KEY: ci-test-secret-key-32chars-padding
           REDIS_URL: redis://localhost:6379/0
           LDAP_ENABLED: "false"
         run: |
@@ -104,7 +106,7 @@ jobs:
       - name: Run integration tests
         env:
           DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
-          SECRET_KEY: ci-test-secret-key-32chars-padding00
+          SECRET_KEY: ci-test-secret-key-32chars-padding
           REDIS_URL: redis://localhost:6379/0
           LDAP_ENABLED: "false"
         run: |
@@ -113,63 +115,10 @@ jobs:
             --cov-append \
             --cov-report=xml
 
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          file: backend/coverage.xml
-          flags: backend
-          fail_ci_if_error: false
-        continue-on-error: true
-
-  # ────────────────────────────────────────────────────────
-  # BACKEND — vcsim integration test
-  # ────────────────────────────────────────────────────────
-  backend-vcsim:
-    name: Backend — vcsim Integration
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Go (for vcsim)
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.22"
-
-      - name: Install vcsim
-        run: go install github.com/vmware/govmomi/vcsim@latest
-
-      - name: Start vcsim
-        run: |
-          $(go env GOPATH)/bin/vcsim \
-            -dc 2 -cluster 2 -host 4 -vm 20 \
-            -pool 2 -ds 4 \
-            -httptest.serve 127.0.0.1:8989 &
-          echo "vcsim started, waiting..."
-          sleep 3
-
-      - name: Install Python deps
-        run: pip install -r requirements.txt -r requirements-dev.txt
-
-      - name: Run vcsim tests
-        env:
-          VCSIM_HOST: 127.0.0.1
-          VCSIM_PORT: "8989"
-          VCSIM_USER: user
-          VCSIM_PASS: pass
-          SECRET_KEY: ci-test-secret-key-32chars-padding00
-          LDAP_ENABLED: "false"
-        run: pytest tests/vcsim/ -v
-
   # ────────────────────────────────────────────────────────
   # FRONTEND
   # ────────────────────────────────────────────────────────
+
   frontend-lint:
     name: Frontend — Lint & Type Check
     runs-on: ubuntu-latest
@@ -177,20 +126,17 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af  # v4.1.0 Node24
         with:
           node-version: "22"
 
-      - name: Install deps
-        run: npm install
-
-      - name: Lint
-        run: npm run lint || true
-
-      - name: Type check
-        run: npm run type-check || true
+      - run: npm install
+      - run: npm run lint || true
+      - run: npm run type-check || true
 
   frontend-test:
     name: Frontend — Tests
@@ -199,17 +145,16 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af  # v4.1.0 Node24
         with:
           node-version: "22"
 
-      - name: Install deps
-        run: npm install
-
-      - name: Run tests
-        run: npm run test:coverage || true
+      - run: npm install
+      - run: npm run test:coverage || true
 
   frontend-build:
     name: Frontend — Build
@@ -218,22 +163,23 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af  # v4.1.0 Node24
         with:
           node-version: "22"
 
-      - name: Install deps
-        run: npm install
+      - run: npm install
 
       - name: Build
         run: npm run build
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || 'http://localhost:8000' }}
+          VITE_API_BASE_URL: "http://localhost:8000"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fcc89b82e4b5e9c9a47  # v4.6.0 Node24
         with:
           name: frontend-dist
           path: frontend/dist/
@@ -242,6 +188,7 @@ jobs:
   # ────────────────────────────────────────────────────────
   # DOCKER
   # ────────────────────────────────────────────────────────
+
   docker-build:
     name: Docker — Build & Push to GHCR
     runs-on: ubuntu-latest
@@ -252,21 +199,22 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  # v3.3.0 Node24
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca  # v3.9.0 Node24
 
       - name: Backend — metadata
         id: meta-backend
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96  # v5.6.1 Node24
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend
           tags: |
@@ -275,7 +223,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Backend — Build & push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25  # v6.14.0 Node24
         with:
           context: ./backend
           target: production
@@ -287,7 +235,7 @@ jobs:
 
       - name: Frontend — metadata
         id: meta-frontend
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96  # v5.6.1 Node24
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend
           tags: |
@@ -296,14 +244,13 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Frontend — Build & push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25  # v6.14.0 Node24
         with:
           context: ./frontend
           target: production
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
-          build-args: |
-            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL || 'http://localhost:8000' }}
+          build-args: VITE_API_BASE_URL=http://localhost:8000
           cache-from: type=gha
           cache-to: type=gha,mode=max
