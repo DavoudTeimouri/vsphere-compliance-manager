@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.5] — 2026-06-17
+
+### Fixed
+- Replace `npm ci` with `npm install` in frontend Dockerfile — `npm ci` requires
+  `package-lock.json` which doesn't exist yet, causing Docker build to fail
+- Upgrade frontend Docker base image from `node:20-alpine` to `node:22-alpine`
+
+---
+
 ## [1.2.4] — 2026-06-17
 
 ### Fixed
@@ -178,7 +187,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.4...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.5...HEAD
+[1.2.5]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.1...v1.2.2

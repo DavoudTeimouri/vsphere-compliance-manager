@@ -1,19 +1,19 @@
 # ── Development ──────────────────────────────────────────
-FROM node:20-alpine AS development
+FROM node:22-alpine AS development
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 COPY . .
 EXPOSE 5173
 CMD ["npm", "run", "dev", "--", "--host"]
 
 # ── Build ────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --ignore-scripts
+RUN npm install
 COPY . .
 
 ARG VITE_API_BASE_URL
