@@ -372,18 +372,24 @@ npm run dev          # Starts on http://localhost:3000
 ### Running Tests
 
 ```bash
-# Backend unit tests
+# Backend unit tests (no external dependencies)
 cd backend
-pytest tests/unit/ -v --cov=app --cov-report=html
+pytest tests/unit/ -v --cov=app
 
-# Backend integration tests (requires running DB)
+# Backend integration tests (requires PostgreSQL + Redis)
 pytest tests/integration/ -v
+
+# vcsim tests — test against simulated vCenter (no real vCenter needed)
+vcsim -dc 2 -cluster 2 -host 4 -vm 20 -ds 4 -httptest.serve 127.0.0.1:8989 &
+pytest tests/vcsim/ -v -s
 
 # Frontend tests
 cd frontend
 npm test
-npm run test:coverage
 ```
+
+> **vcsim** is a VMware vCenter simulator — it creates a full inventory (Datacenters, Clusters, Hosts, VMs, Datastores) without needing a real vCenter license. Each test run randomises VM naming patterns to cover different compliance scenarios automatically.
+> See [docs/vcsim-testing.md](docs/vcsim-testing.md) for full details.
 
 ### Code Quality
 

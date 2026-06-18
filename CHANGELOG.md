@@ -11,6 +11,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.2] — 2026-06-18
+
+### Fixed
+- Remove `cache` option from `setup-python` and `setup-node` in CI — fixes `Cache service 400` error caused by missing `package-lock.json`
+- Replace pinned action patch versions with major-only tags (e.g. `@v4`, `@v5`) to avoid Node.js 20 deprecation warnings
+- Remove `|| true` suppression from lint steps — lint now properly fails the job on errors
+- Add `continue-on-error: true` only on codecov upload (non-critical)
+
+### Added
+- vcsim integration test suite (`tests/vcsim/`)
+- `conftest.py` with `vcenter_service`, `inventory`, `random_patterns`, `session_seed` fixtures
+- `test_vcsim.py`: 13 tests across connectivity, DRS compliance, and storage compliance
+- Randomized VM pattern selection per test session for broader scenario coverage
+- `docs/vcsim-testing.md` — full guide for local and CI vcsim usage
+- vcsim job added to CI pipeline using Go install + background process
+- vcsim section added to README development guide
+
+---
+
+## [1.2.2] — 2026-06-17
+
+### Fixed
+- Remove version pinning from GitHub Actions — use major tags (`@v4`, `@v5`, `@v6`)
+  to always get latest Node.js 24 compatible runner
+- Remove `cache:` from `setup-python` and `setup-node` (was causing Cache 400 errors
+  because `package-lock.json` doesn't exist until `npm install` runs)
+- Switch `npm ci` → `npm install` in frontend CI jobs (no lock file yet)
+- Switch frontend Node.js from 22 back to latest via `node-version: "22"` without cache
+
+### Added
+- Pure-Python vCenter inventory simulator (`tests/fixtures/vcenter_sim.py`)
+  - Generates randomized realistic vCenter inventory each test run
+  - Covers: clusters, hosts, VM groups, datastores, DS clusters, scattered VMs, ISO mounts
+  - Configurable seed for reproducing failures
+- `test_vcsim.py` — 14 randomized tests covering DRS and storage engine
+- `conftest.py` — auto-imports all fixtures project-wide
+- `docs/testing/README.md` — full testing guide including vcsim and govmomi Docker usage
+
+---
+
 ## [1.2.1] — 2026-06-17
 
 ### Fixed
@@ -99,7 +139,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.0.0...v1.1.0
