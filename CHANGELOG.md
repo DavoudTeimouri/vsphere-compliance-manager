@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.4] — 2026-06-17
+
+### Fixed
+- Fix `AttributeError: 'NoneType' has no attribute 'host'` in auth login endpoint
+  when running under TestClient (request.client is None in test environment)
+- Add `src/vite-env.d.ts` — fixes `Property 'env' does not exist on type 'ImportMeta'`
+- Revert SHA-pinned actions back to simple version tags (`@v4`, `@v5`, `@v6`)
+  SHA pinning caused `unable to find version` errors for upload-artifact
+- Node.js 20 deprecation warnings are informational only — GitHub forces Node 24
+  automatically, so `@v4` tags work correctly despite the warning
+
+---
+
 ## [1.2.3] — 2026-06-17
 
 ### Fixed
@@ -165,7 +178,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.3...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.4...HEAD
+[1.2.4]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.0...v1.2.1

@@ -58,7 +58,8 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
         raise HTTPException(status_code=401, detail="Incorrect username or password")
 
     token = create_access_token({"sub": str(user.id), "role": user.role})
-    log = AuditLog(user_id=user.id, action="login", ip_address=request.client.host)
+    log = AuditLog(user_id=user.id, action="login",
+                   ip_address=request.client.host if request.client else "unknown")
     db.add(log)
     db.commit()
     return {"access_token": token, "token_type": "bearer", "role": user.role, "username": user.username, "full_name": user.full_name}

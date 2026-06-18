@@ -23,25 +23,14 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
-
-      - name: Setup Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0 Node24
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install lint tools
-        run: pip install ruff mypy black
-
-      - name: Ruff
-        run: ruff check . || true
-
-      - name: Black
-        run: black --check . || true
-
-      - name: Mypy
-        run: mypy app/ --ignore-missing-imports || true
+      - run: pip install ruff mypy black
+      - run: ruff check . || true
+      - run: black --check . || true
+      - run: mypy app/ --ignore-missing-imports || true
 
   backend-test:
     name: Backend — Tests
@@ -72,11 +61,8 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
-
-      - name: Setup Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0 Node24
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -91,29 +77,21 @@ jobs:
           LDAP_ENABLED: "false"
         run: alembic upgrade head
 
-      - name: Run unit tests
+      - name: Unit tests
         env:
           DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
           SECRET_KEY: ci-test-secret-key-32chars-padding
           REDIS_URL: redis://localhost:6379/0
           LDAP_ENABLED: "false"
-        run: |
-          pytest tests/unit/ -v \
-            --cov=app \
-            --cov-report=xml \
-            --cov-report=term-missing
+        run: pytest tests/unit/ -v --cov=app --cov-report=xml --cov-report=term-missing
 
-      - name: Run integration tests
+      - name: Integration tests
         env:
           DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
           SECRET_KEY: ci-test-secret-key-32chars-padding
           REDIS_URL: redis://localhost:6379/0
           LDAP_ENABLED: "false"
-        run: |
-          pytest tests/integration/ -v \
-            --cov=app \
-            --cov-append \
-            --cov-report=xml
+        run: pytest tests/integration/ -v --cov=app --cov-append --cov-report=xml
 
   # ────────────────────────────────────────────────────────
   # FRONTEND
@@ -126,14 +104,10 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
-
-      - name: Setup Node
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af  # v4.1.0 Node24
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - run: npm install
       - run: npm run lint || true
       - run: npm run type-check || true
@@ -145,14 +119,10 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
-
-      - name: Setup Node
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af  # v4.1.0 Node24
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - run: npm install
       - run: npm run test:coverage || true
 
@@ -163,23 +133,16 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
-
-      - name: Setup Node
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af  # v4.1.0 Node24
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
       - run: npm install
-
       - name: Build
         run: npm run build
         env:
           VITE_API_BASE_URL: "http://localhost:8000"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fcc89b82e4b5e9c9a47  # v4.6.0 Node24
+      - uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
           path: frontend/dist/
@@ -197,24 +160,20 @@ jobs:
     permissions:
       contents: read
       packages: write
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 Node24
+      - uses: actions/checkout@v4
 
-      - name: Log in to GHCR
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567  # v3.3.0 Node24
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca  # v3.9.0 Node24
+      - uses: docker/setup-buildx-action@v3
 
       - name: Backend — metadata
         id: meta-backend
-        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96  # v5.6.1 Node24
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend
           tags: |
@@ -223,7 +182,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Backend — Build & push
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25  # v6.14.0 Node24
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           target: production
@@ -235,7 +194,7 @@ jobs:
 
       - name: Frontend — metadata
         id: meta-frontend
-        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96  # v5.6.1 Node24
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend
           tags: |
@@ -244,7 +203,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
       - name: Frontend — Build & push
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25  # v6.14.0 Node24
+        uses: docker/build-push-action@v6
         with:
           context: ./frontend
           target: production
