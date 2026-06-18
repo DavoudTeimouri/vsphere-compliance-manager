@@ -1,0 +1,107 @@
+version: "3.9"
+
+# Full test environment with vcsim
+# Usage: docker compose -f docker-compose.test.yml up -d
+# Then: python scripts/seed_vcsim.py
+
+name: vcm-test
+
+services:
+
+  vcsim:
+    image: vmware/vcsim:latest
+    command: >
+      -l 0.0.0.0:8989
+      -dc 2
+      -cluster 3
+      -host 5
+      -vm 0
+    ports:
+      - "8989:8989"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--no-check-certificate", "https://localhost:8989/sdk"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - vcm_test_net
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: vcm
+      POSTGRES_PASSWORD: vcm_pass
+      POSTGRES_DB: vcm_db
+    volumes:
+      - vcm_test_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vcm -d vcm_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vcm_test_net
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - vcm_test_net
+
+  backend:
+    build:
+      context: ./backend
+      target: development
+    command: >
+      sh -c "alembic upgrade head &&
+             python scripts/seed.py &&
+             uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+    environment:
+      DATABASE_URL: postgresql://vcm:vcm_pass@postgres:5432/vcm_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: test-secret-key-32chars-vcm-2026
+      ENCRYPTION_KEY: ""
+      LDAP_ENABLED: "false"
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: "Admin@1234"
+      ADMIN_EMAIL: admin@test.local
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - vcm_test_net
+
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    ports:
+      - "3000:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    volumes:
+      - ./frontend/src:/app/src
+    depends_on:
+      - backend
+    networks:
+      - vcm_test_net
+
+volumes:
+  vcm_test_pg:
+
+networks:
+  vcm_test_net:
+    driver: bridge

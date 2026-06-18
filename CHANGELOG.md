@@ -11,6 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] — 2026-06-17
+
+### Added
+- `docs/vcsim/README.md` — راهنمای کامل تست با vcsim به فارسی و انگلیسی
+- `docs/vcsim/seed_vcsim.py` — اسکریپت randomized VM naming برای vcsim
+  - پشتیبانی از `--seed` برای reproducible test
+  - پشتیبانی از `--prefixes` و `--envs` برای سناریوهای مختلف
+  - پشتیبانی از `--dry-run`
+  - Rename خودکار Datastore ها
+  - Summary کامل inventory بعد از seed
+- `docs/vcsim/docker-compose.vcsim.yml` — محیط تست کامل (vcsim + VCM stack)
+- سناریوهای تست مستندشده: DRS، Storage، Full Analysis با Apply
+
+### Fixed
+- `docs/testing/README.md` آپدیت با راهنمای vcsim Docker
+
+### Changed
+- `docs/testing/README.md` merged with `docs/vcsim-testing.md`
+
+---
+
 ## [1.2.5] — 2026-06-17
 
 ### Fixed
@@ -187,7 +208,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.5...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.5...v1.3.0
 [1.2.5]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.2...v1.2.3

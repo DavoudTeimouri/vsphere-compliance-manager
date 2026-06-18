@@ -1,155 +1,299 @@
-# Testing with vcsim
+# vCSIM Testing Guide
 
-[vcsim](https://github.com/vmware/govmomi/tree/main/vcsim) یک شبیه‌ساز vCenter است که بدون نیاز به محیط VMware واقعی، یک inventory کامل شامل Datacenter، Cluster، Host، VM و Datastore شبیه‌سازی می‌کند.
+راهنمای کامل راه‌اندازی محیط تست با vCenter Simulator (vcsim) برای تست VCM
 
 ---
 
-## نصب vcsim
+## چرا vcsim؟
 
-### روش ۱ — از طریق Go
+همه کاربران به vCenter Server واقعی دسترسی ندارن. **vcsim** یه vCenter کامل رو شبیه‌سازی میکنه که:
 
-```bash
-go install github.com/vmware/govmomi/vcsim@latest
+- کاملاً رایگان و open-source هست (VMware/govmomi)
+- همه vSphere API ها رو پشتیبانی میکنه
+- توی Docker اجرا میشه — نیاز به ESXi نداره
+- برای CI/CD مناسبه
+
+---
+
+## معماری
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  docker compose -f docker-compose.test.yml up -d        │
+│                                                          │
+│  ┌───────────────┐      ┌──────────────────────────┐    │
+│  │  vcsim        │      │  VCM Backend (FastAPI)   │    │
+│  │  port: 8989   │◄────►│  port: 8000              │    │
+│  │               │      │                          │    │
+│  │  2 DC         │      │  + PostgreSQL :5432      │    │
+│  │  3 Cluster    │      │  + Redis      :6379      │    │
+│  │  5 Host/Cl.   │      └──────────────────────────┘    │
+│  │  ~90 VM       │                                       │
+│  └───────────────┘      ┌──────────────────────────┐    │
+│                          │  VCM Frontend (React)    │    │
+│                          │  port: 3000              │    │
+│                          └──────────────────────────┘    │
+└─────────────────────────────────────────────────────────┘
+                    ▲
+                    │ seed_vcsim.py
+                    │ رندوم‌سازی اسم VM ها
 ```
 
-### روش ۲ — Docker
+---
+
+## قدم ۱ — راه‌اندازی vcsim
+
+### با Docker (ساده‌ترین روش)
 
 ```bash
-docker run -d --name vcsim \
+docker run -d \
+  --name vcsim \
+  --restart unless-stopped \
   -p 8989:8989 \
   vmware/vcsim:latest \
-  -httptest.serve 0.0.0.0:8989
-```
-
----
-
-## راه‌اندازی vcsim
-
-```bash
-# Inventory پیش‌فرض: 2 DC، 2 Cluster، 4 Host، 20 VM، 4 Datastore
-vcsim -httptest.serve 127.0.0.1:8989
-
-# Inventory سفارشی‌تر (پیچیده‌تر برای تست بهتر)
-vcsim \
+  -l 0.0.0.0:8989 \
   -dc 2 \
   -cluster 3 \
   -host 5 \
-  -vm 30 \
-  -pool 2 \
-  -ds 6 \
-  -httptest.serve 127.0.0.1:8989
+  -vm 0
 ```
 
-| Flag | توضیح | پیش‌فرض |
-|------|--------|---------|
-| `-dc` | تعداد Datacenter | 1 |
-| `-cluster` | تعداد Cluster در هر DC | 1 |
-| `-host` | تعداد Host در هر Cluster | 2 |
-| `-vm` | تعداد VM (توزیع می‌شود) | 2 |
-| `-ds` | تعداد Datastore | 1 |
-| `-pool` | تعداد Resource Pool | 1 |
+| پارامتر | مقدار | توضیح |
+|---------|-------|-------|
+| `-dc 2` | ۲ | تعداد Datacenter |
+| `-cluster 3` | ۳ | Cluster در هر DC |
+| `-host 5` | ۵ | Host در هر Cluster |
+| `-vm 0` | ۰ | VM — اسکریپت seed میسازه |
 
-اطلاعات اتصال vcsim:
-- **Host:** `127.0.0.1:8989`
-- **Username:** `user`
-- **Password:** `pass`
+> **نکته:** با `-vm 0` شروع کن تا اسکریپت seed_vcsim.py
+> تعداد دقیق VM با اسم‌های سفارشی بسازه.
 
----
-
-## اجرای تست‌ها
+### بررسی وضعیت
 
 ```bash
-cd backend
-
-# ۱. vcsim را در یک terminal راه‌اندازی کن
-vcsim -dc 2 -cluster 2 -host 4 -vm 20 -ds 4 -httptest.serve 127.0.0.1:8989 &
-
-# ۲. تست‌ها را اجرا کن
-pytest tests/vcsim/ -v -s
-
-# با متغیرهای محیطی سفارشی
-VCSIM_HOST=127.0.0.1 VCSIM_PORT=8989 pytest tests/vcsim/ -v -s
+docker logs vcsim
+docker ps | grep vcsim
 ```
 
 ---
 
-## Randomization — چرا و چگونه
-
-هر بار که تست‌های vcsim اجرا می‌شوند، **الگوهای نام VM به صورت تصادفی** انتخاب می‌شوند تا سناریوهای مختلف پوشش داده شود:
-
-```
-[vcsim] seed=42731 — patterns: ['WEB VMs', 'DB VMs', 'CACHE VMs']
-[vcsim] seed=18205 — patterns: ['APP VMs', 'WORKER VMs']
-[vcsim] seed=93014 — patterns: ['API VMs', 'PROXY VMs', 'AUTH VMs', 'DB VMs']
-```
-
-اگر یک تست fail شد و می‌خواهی دقیقاً همان seed را reproduce کنی:
+## قدم ۲ — راه‌اندازی VCM کامل
 
 ```bash
-# seed را از خروجی تست کپی کن
-PYTHONHASHSEED=42731 pytest tests/vcsim/ -v -s
+# کلون پروژه (اگه نداری)
+git clone https://github.com/DavoudTeimouri/vsphere-compliance-manager.git
+cd vsphere-compliance-manager
+
+# ساخت و اجرای همه سرویس‌ها
+docker compose -f docker-compose.test.yml up -d
+
+# بررسی وضعیت
+docker compose -f docker-compose.test.yml ps
+```
+
+صبر کن تا همه سرویس‌ها `healthy` بشن (حدود ۳۰ ثانیه):
+
+```bash
+docker compose -f docker-compose.test.yml ps
+# NAME       STATUS
+# vcsim      Up (healthy)
+# postgres   Up (healthy)
+# redis      Up (healthy)
+# backend    Up
+# frontend   Up
 ```
 
 ---
 
-## ساختار تست‌ها
+## قدم ۳ — Seed کردن vcsim با اسم‌های واقعی
+
+```bash
+pip install pyVmomi
+
+# رندوم کامل (هر بار متفاوت)
+python scripts/seed_vcsim.py
+
+# با seed مشخص (قابل تکرار)
+python scripts/seed_vcsim.py --seed 42
+
+# با اسم‌های سفارشی
+python scripts/seed_vcsim.py \
+  --pattern "WEB APP DB CACHE WORKER BATCH" \
+  --env "PROD DEV DR STG" \
+  --count 8 \
+  --seed 2026
+
+# فقط نمایش بدون اعمال تغییر
+python scripts/seed_vcsim.py --dry-run --seed 42
+```
+
+### خروجی نمونه
 
 ```
-tests/vcsim/
-├── conftest.py          ← fixtures: vcenter_service, inventory, random_patterns, session_seed
-└── test_vcsim.py
-    ├── TestVcsimConnectivity   ← اتصال و ساختار inventory
-    ├── TestDRSWithVcsim        ← تحلیل DRS روی inventory زنده
-    └── TestStorageWithVcsim    ← تحلیل Storage روی inventory زنده
+🌱 Using seed: 42
+✓ Connected to vcsim at localhost:8989
+  Version: 6.5.0
+
+📊 vcsim inventory:
+   Clusters: 6
+   VMs (before rename): 0
+
+🔧 Renaming VMs...
+
+  Cluster: DC0_C0 (5 hosts)
+    ✓ DC0_H0_VM0 → WEB-PROD-101
+    ✓ DC0_H0_VM1 → WEB-PROD-102
+    ✓ DC0_H0_VM2 → APP-DR-101
+    ✓ DC0_H0_VM3 → DB-STG-101
+    ✓ DC0_H0_VM4 → CACHE-PROD-101
+
+  Cluster: DC0_C1 (5 hosts)
+    ✓ DC0_H1_VM0 → WEB-PROD-201
+    ...
+
+═══════════════════════════════════════════════════════
+✅ Seeding complete!
+   Renamed: 90 VMs
+
+📌 Add this vCenter connection in VCM Settings:
+   Name:     vcsim-test
+   Host:     localhost
+   Port:     8989
+   Username: user
+   Password: pass
+   SSL:      disabled
+
+⚙️  Suggested patterns for VCM Settings → Patterns:
+   VM Name: ^(WEB)-  →  matches WEB-PROD-101, WEB-DR-202, ...
+   VM Name: ^(APP)-  →  matches APP-PROD-101, APP-DR-202, ...
+═══════════════════════════════════════════════════════
 ```
-
-### TestVcsimConnectivity
-اتصال، وجود Cluster/Host/VM/Datastore، و نام‌گذاری صحیح را تأیید می‌کند.
-
-### TestDRSWithVcsim
-- تحلیل DRS بدون exception اجرا شود
-- تعداد VM در هر Rule هرگز از `host_count - 1` بیشتر نشود (**قانون اصلی compliance**)
-- گروه‌های تک‌VM هرگز Rule نگیرند
-- تعداد کل Rule ها با جمع نتایج Cluster ها یکسان باشد
-
-### TestStorageWithVcsim
-- تحلیل Storage بدون exception اجرا شود
-- ISO disk ها Violation ایجاد نکنند
-- برای هر Violation حداقل یک Proposal وجود داشته باشد
-- VM های Scattered توصیه تجمیع دریافت کنند
 
 ---
 
-## استفاده در CI
+## قدم ۴ — پیکربندی VCM
 
-در CI از همین vcsim استفاده می‌شود — بدون نیاز به vCenter واقعی:
+### ۴.۱ ورود به VCM
 
-```yaml
-# از .github/workflows/ci.yml
-- name: Install vcsim
-  run: go install github.com/vmware/govmomi/vcsim@latest
+مرورگر: **http://localhost:3000**
 
-- name: Start vcsim
-  run: |
-    $(go env GOPATH)/bin/vcsim \
-      -dc 2 -cluster 2 -host 4 -vm 20 -ds 4 \
-      -httptest.serve 127.0.0.1:8989 &
-    sleep 3
+```
+Username: admin
+Password: Admin@1234
+```
 
-- name: Run vcsim tests
-  run: pytest tests/vcsim/ -v
+### ۴.۲ اضافه کردن vcsim به عنوان vCenter
+
+**Settings → vCenter Connections → Add Connection:**
+
+```
+Name:     vcsim-test
+Host:     vcsim        (اسم container در Docker network)
+Port:     8989
+Username: user
+Password: pass
+SSL:      disabled
+```
+
+> اگه خارج از Docker هستی، از `localhost` به جای `vcsim` استفاده کن.
+
+### ۴.۳ اضافه کردن Pattern ها
+
+**Settings → Patterns → Add Pattern:**
+
+| Name | Type | Regex |
+|------|------|-------|
+| Web Servers | vm_name | `^(WEB)-` |
+| App Servers | vm_name | `^(APP)-` |
+| DB Servers | vm_name | `^(DB)-` |
+| Cache Servers | vm_name | `^(CACHE)-` |
+| Worker Servers | vm_name | `^(WORKER)-` |
+| Batch Servers | vm_name | `^(BATCH)-` |
+| Prod Datastores | datastore | `^(LocalDS_)` |
+
+---
+
+## قدم ۵ — اجرای Analysis و تست سناریوها
+
+**Analysis → Run Analysis → vcsim-test → Run**
+
+### سناریوهای DRS که باید پوشش داده بشن
+
+| سناریو | انتظار |
+|--------|--------|
+| گروه WEB با ۵ VM در Cluster با ۵ Host | ساخت Rule با ۴ VM (hosts-1) |
+| گروه DB با ۱ VM | Skip — گزارش بده، Rule نسازه |
+| گروه APP با ۸ VM در Cluster با ۳ Host | ۲ Rule — هر کدام ۲ VM |
+| Rule قدیمی `VCM-AAR-*` موجود | پاک کن و دوباره بساز |
+| Rule دستی موجود | دست نزن |
+
+### سناریوهای Storage که باید پوشش داده بشن
+
+| سناریو | انتظار |
+|--------|--------|
+| ۲ VM از گروه WEB روی یک Datastore | Violation گزارش بده |
+| ISO mount مشترک | نادیده بگیر |
+| VM با Hard Disk روی ۲ Datastore | Scattered VM گزارش بده |
+| فقط ۱ Datastore موجود | اعلام کن امکان جداسازی نیست |
+
+---
+
+## تکرار تست با seed های مختلف
+
+برای پوشش بیشتر سناریوها، با seed های مختلف تست کن:
+
+```bash
+for seed in 1 42 100 2026 9999; do
+  echo "=== Testing with seed $seed ==="
+  python scripts/seed_vcsim.py --seed $seed --count 6
+  echo "Now run analysis in VCM and verify results"
+  read -p "Press Enter to continue to next seed..."
+done
 ```
 
 ---
 
-## افزودن تست جدید
+## توقف محیط تست
 
-```python
-# tests/vcsim/test_my_feature.py
-def test_my_feature(inventory, random_patterns, vcenter_service):
-    # inventory: dict با کلیدهای clusters، datastores، datastore_clusters
-    # random_patterns: list از pattern های تصادفی
-    # vcenter_service: اتصال زنده به vcsim
-    clusters = inventory["clusters"]
-    assert len(clusters) > 0
+```bash
+# متوقف کردن
+docker compose -f docker-compose.test.yml stop
+
+# حذف کامل (شامل database)
+docker compose -f docker-compose.test.yml down -v
+
+# فقط vcsim رو restart کن (بدون از دست دادن database)
+docker restart vcsim
+python scripts/seed_vcsim.py --seed 42
+```
+
+---
+
+## عیب‌یابی
+
+### vcsim وصل نمیشه
+
+```bash
+# بررسی وضعیت container
+docker logs vcsim
+
+# تست مستقیم API
+curl -k -u user:pass https://localhost:8989/sdk
+```
+
+### خطای SSL
+
+```bash
+# اطمینان از اینکه verify_ssl در VCM Settings خاموشه
+# Settings → vCenter Connections → Edit → SSL: disabled
+```
+
+### VM ها بعد از restart vcsim پاک میشن
+
+vcsim **stateless** هست — بعد از هر restart باید دوباره seed بزنی:
+
+```bash
+docker restart vcsim
+sleep 5
+python scripts/seed_vcsim.py --seed 42
 ```

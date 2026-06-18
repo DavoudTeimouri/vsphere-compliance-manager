@@ -1,0 +1,119 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────
+# VCM Test Environment — vcsim + full VCM stack
+#
+# Usage:
+#   docker compose -f docker-compose.vcsim.yml up -d
+#   docker compose -f docker-compose.vcsim.yml down -v
+# ─────────────────────────────────────────────────────────
+
+name: vcm-test
+
+services:
+
+  # ── vCenter Simulator ───────────────────────────────────
+  vcsim:
+    image: ghcr.io/vmware/govmomi/vcsim:latest
+    container_name: vcm-vcsim
+    restart: unless-stopped
+    command: >
+      -httptest.serve=0.0.0.0:8989
+      -dc 2
+      -cluster 3
+      -host 4
+      -vm 20
+      -ds 4
+      -pod 2
+      -pg 2
+    ports:
+      - "8989:8989"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--no-check-certificate", "https://localhost:8989/sdk"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - vcm-test-net
+
+  # ── Database ─────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: vcm-test-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vcm
+      POSTGRES_PASSWORD: vcm_pass
+      POSTGRES_DB: vcm_db
+    volumes:
+      - vcm_test_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vcm -d vcm_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vcm-test-net
+
+  # ── Redis ────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: vcm-test-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - vcm-test-net
+
+  # ── Backend ──────────────────────────────────────────────
+  backend:
+    image: ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:latest
+    container_name: vcm-test-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://vcm:vcm_pass@postgres:5432/vcm_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: test-secret-key-change-in-production
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: VCM@admin2024!
+      ADMIN_EMAIL: admin@test.local
+      LDAP_ENABLED: "false"
+      LOG_LEVEL: DEBUG
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - vcm-test-net
+
+  # ── Frontend ─────────────────────────────────────────────
+  frontend:
+    image: ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:latest
+    container_name: vcm-test-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - vcm-test-net
+
+volumes:
+  vcm_test_pgdata:
+
+networks:
+  vcm-test-net:
+    driver: bridge
