@@ -11,7 +11,7 @@ permissions:
 
 jobs:
 
-  # ── Build and push versioned Docker images ─────────────
+  # ── Build Docker images ────────────────────────────────
   docker:
     name: Docker — Build & Push
     runs-on: ubuntu-latest
@@ -19,29 +19,24 @@ jobs:
       contents: read
       packages: write
     outputs:
-      backend-tags:  ${{ steps.meta-backend.outputs.tags }}
-      frontend-tags: ${{ steps.meta-frontend.outputs.tags }}
-      version:       ${{ steps.version.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract version from tag
+      - name: Extract version
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      # ── Backend ────────────────────────────────────────
-      - name: Backend — Docker metadata
+      - name: Backend — metadata
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
@@ -63,8 +58,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # ── Frontend ───────────────────────────────────────
-      - name: Frontend — Docker metadata
+      - name: Frontend — metadata
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
@@ -87,11 +81,99 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Create GitHub Release with image info ──────────────
+  # ── Package release assets ────────────────────────────
+  package:
+    name: Package — Release Assets
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: echo "version=${{ needs.docker.outputs.version }}" >> $GITHUB_OUTPUT
+
+      # Docker Compose bundle (platform-independent)
+      - name: Create deployment bundle
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BUNDLE="vcm-deployment-$VERSION"
+          mkdir -p "$BUNDLE"
+
+          # Override image tags to this specific version
+          sed "s|:main|:$VERSION|g" docs/vcsim/docker-compose.vcsim.yml \
+            | sed "s|\${BACKEND_TAG:-main}|$VERSION|g" \
+            | sed "s|\${FRONTEND_TAG:-main}|$VERSION|g" \
+            > "$BUNDLE/docker-compose.yml"
+
+          cp .env.example "$BUNDLE/.env.example"
+          cp docs/vcsim/seed_vcsim.py "$BUNDLE/seed_vcsim.py"
+          cp docs/deployment/README.md "$BUNDLE/README.md"
+
+          cat > "$BUNDLE/QUICKSTART.md" << QUICKSTART
+          # VCM $VERSION — Quick Start
+
+          ## Prerequisites
+          - Docker 24+ and Docker Compose v2
+          - Python 3.8+ with pyVmomi (for seed_vcsim.py)
+
+          ## Start
+          \`\`\`bash
+          cp .env.example .env
+          # Edit .env — set SECRET_KEY and ADMIN_PASSWORD at minimum
+          docker compose up -d
+          \`\`\`
+
+          UI: http://localhost:3000 (admin / VCM@admin2024!)
+          API docs: http://localhost:8000/docs
+
+          ## Docker Images
+          \`\`\`bash
+          docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:$VERSION
+          docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:$VERSION
+          \`\`\`
+
+          ## Test with vcsim (no real vCenter needed)
+          \`\`\`bash
+          pip install pyVmomi
+          python3 seed_vcsim.py --seed 42
+          \`\`\`
+          QUICKSTART
+
+          zip -r "vcm-deployment-$VERSION.zip" "$BUNDLE/"
+          tar czf "vcm-deployment-$VERSION.tar.gz" "$BUNDLE/"
+
+      # vcsim testing bundle
+      - name: Create vcsim test bundle
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BUNDLE="vcm-vcsim-test-$VERSION"
+          mkdir -p "$BUNDLE"
+
+          sed "s|:main|:$VERSION|g" docs/vcsim/docker-compose.vcsim.yml \
+            | sed "s|\${BACKEND_TAG:-main}|$VERSION|g" \
+            | sed "s|\${FRONTEND_TAG:-main}|$VERSION|g" \
+            > "$BUNDLE/docker-compose.yml"
+
+          cp docs/vcsim/seed_vcsim.py "$BUNDLE/seed_vcsim.py"
+          cp docs/vcsim/README.md "$BUNDLE/README.md"
+
+          zip -r "vcm-vcsim-test-$VERSION.zip" "$BUNDLE/"
+
+      - name: Upload assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            vcm-deployment-*.zip
+            vcm-deployment-*.tar.gz
+            vcm-vcsim-test-*.zip
+
+  # ── Create GitHub Release ─────────────────────────────
   release:
     name: GitHub — Create Release
     runs-on: ubuntu-latest
-    needs: docker
+    needs: [docker, package]
     permissions:
       contents: write
 
@@ -100,6 +182,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Download assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+
       - name: Extract CHANGELOG notes
         id: changelog
         run: |
@@ -107,7 +194,7 @@ jobs:
           NOTES=$(awk "/^## \[$VERSION\]/{flag=1;next}/^## \[/{flag=0}flag" CHANGELOG.md \
                   | sed '/^---$/d' | sed '/^[[:space:]]*$/d')
           if [ -z "$NOTES" ]; then
-            NOTES="See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for full details."
+            NOTES="See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details."
           fi
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
@@ -119,6 +206,10 @@ jobs:
           name: "v${{ needs.docker.outputs.version }}"
           prerelease: ${{ contains(github.ref_name, '-') }}
           make_latest: ${{ !contains(github.ref_name, '-') }}
+          files: |
+            vcm-deployment-*.zip
+            vcm-deployment-*.tar.gz
+            vcm-vcsim-test-*.zip
           body: |
             ## What's Changed
 
@@ -126,29 +217,54 @@ jobs:
 
             ---
 
-            ## Docker Images
+            ## Installation
 
-            Images are published to the [GitHub Container Registry](https://github.com/${{ github.repository }}/pkgs/container/vsphere-compliance-manager%2Fbackend).
+            ### Option A — Docker Compose (quickest)
 
-            ```bash
-            docker pull ghcr.io/${{ github.repository }}/backend:${{ needs.docker.outputs.version }}
-            docker pull ghcr.io/${{ github.repository }}/frontend:${{ needs.docker.outputs.version }}
-            ```
-
-            ## Quick Start with Published Images
+            Download `vcm-deployment-${{ needs.docker.outputs.version }}.zip`, extract, then:
 
             ```bash
-            # Download the test environment compose file
-            curl -LO https://raw.githubusercontent.com/${{ github.repository }}/main/docs/vcsim/docker-compose.vcsim.yml
-
-            # Run with this specific version
-            BACKEND_TAG=${{ needs.docker.outputs.version }} \
-            FRONTEND_TAG=${{ needs.docker.outputs.version }} \
-            docker compose -f docker-compose.vcsim.yml up -d
+            cp .env.example .env
+            # Edit .env — set SECRET_KEY and ADMIN_PASSWORD
+            docker compose up -d
             ```
 
-            ## Full Documentation
+            ### Option B — Pull images manually
+
+            ```bash
+            docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:${{ needs.docker.outputs.version }}
+            docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:${{ needs.docker.outputs.version }}
+            ```
+
+            Images: [GHCR Backend](https://github.com/${{ github.repository }}/pkgs/container/vsphere-compliance-manager%2Fbackend) · [GHCR Frontend](https://github.com/${{ github.repository }}/pkgs/container/vsphere-compliance-manager%2Ffrontend)
+
+            ### Option C — Test without a real vCenter
+
+            Download `vcm-vcsim-test-${{ needs.docker.outputs.version }}.zip`, extract, then:
+
+            ```bash
+            docker compose up -d
+            pip install pyVmomi
+            python3 seed_vcsim.py --seed 42
+            ```
+
+            ---
+
+            ## Compatibility
+
+            | Component | Version |
+            |-----------|---------|
+            | vCenter Server | 6.0 – 8.0 |
+            | Docker | 24+ |
+            | Docker Compose | v2+ |
+            | Kubernetes | 1.26+ |
+            | Python (seed script) | 3.8+ |
+
+            ---
+
+            ## Documentation
 
             - [Deployment Guide](https://github.com/${{ github.repository }}/blob/main/docs/deployment/README.md)
             - [vcsim Testing Guide](https://github.com/${{ github.repository }}/blob/main/docs/vcsim/README.md)
             - [API Reference](https://github.com/${{ github.repository }}/blob/main/docs/api/README.md)
+            - [Architecture](https://github.com/${{ github.repository }}/blob/main/docs/architecture/README.md)

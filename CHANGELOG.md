@@ -15,6 +15,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1-beta] — 2026-06-19
+
+### Fixed
+- Remove duplicate `scripts/seed_vcsim.py` (canonical location: `docs/vcsim/seed_vcsim.py`)
+- Remove duplicate `docker-compose.test.yml` (superseded by `docs/vcsim/docker-compose.vcsim.yml`)
+- Remove stale `backend/tests/vcsim/` directory (live vcsim tests moved to `backend/tests/unit/test_vcsim.py`)
+- Fix vcsim image address in `docs/testing/README.md`: `vmware/vcsim:latest` → `ghcr.io/vmware/govmomi/vcsim:latest`
+- All GHCR image references now use lowercase `davoudteimouri` (Docker registry is case-sensitive)
+
+### Changed
+- Release workflow now produces downloadable assets attached to every GitHub Release:
+  - `vcm-deployment-{version}.zip` / `.tar.gz` — Docker Compose bundle with pinned image version
+  - `vcm-vcsim-test-{version}.zip` — vcsim test environment bundle
+  - Both bundles contain `seed_vcsim.py`, `.env.example`, and `README.md`
+- Release body now includes compatibility table and links to all documentation
+
+---
+
 ## [1.3.0-beta] — 2026-06-17
 
 ### Added
@@ -156,7 +174,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.0-beta...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.1-beta...HEAD
+[1.3.1-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.0-beta...v1.3.1-beta
 [1.3.0-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.5-beta...v1.3.0-beta
 [1.2.5-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.4-beta...v1.2.5-beta
 [1.2.4-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.3-beta...v1.2.4-beta

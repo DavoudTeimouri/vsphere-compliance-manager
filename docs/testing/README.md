@@ -116,7 +116,7 @@ you can run [vcsim](https://github.com/vmware/govmomi/tree/main/vcsim)
 # Start vcsim
 docker run -d --name vcsim \
   -p 8989:8989 \
-  vmware/vcsim:latest \
+  ghcr.io/vmware/govmomi/vcsim:latest \
   -httptest.serve=0.0.0.0:8989
 
 # vcsim credentials
