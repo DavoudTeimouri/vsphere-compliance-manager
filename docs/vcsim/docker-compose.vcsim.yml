@@ -1,18 +1,24 @@
 version: "3.9"
 
-# ─────────────────────────────────────────────────────────
 # VCM Test Environment — vcsim + full VCM stack
+#
+# Uses pre-built images from GHCR. No build step required.
 #
 # Usage:
 #   docker compose -f docker-compose.vcsim.yml up -d
 #   docker compose -f docker-compose.vcsim.yml down -v
-# ─────────────────────────────────────────────────────────
+#
+# Override image tag:
+#   BACKEND_TAG=main FRONTEND_TAG=main docker compose -f docker-compose.vcsim.yml up -d
 
 name: vcm-test
 
+x-image-backend:  &backend-image  ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:${BACKEND_TAG:-main}
+x-image-frontend: &frontend-image ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:${FRONTEND_TAG:-main}
+
 services:
 
-  # ── vCenter Simulator ───────────────────────────────────
+  # ── vCenter Simulator ──────────────────────────────────
   vcsim:
     image: ghcr.io/vmware/govmomi/vcsim:latest
     container_name: vcm-vcsim
@@ -22,22 +28,21 @@ services:
       -dc 2
       -cluster 3
       -host 4
-      -vm 20
+      -vm 5
       -ds 4
       -pod 2
-      -pg 2
     ports:
       - "8989:8989"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "--no-check-certificate", "https://localhost:8989/sdk"]
+      test: ["CMD-SHELL", "wget -qO- --no-check-certificate https://localhost:8989/sdk || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 15s
     networks:
       - vcm-test-net
 
-  # ── Database ─────────────────────────────────────────────
+  # ── PostgreSQL ─────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
     container_name: vcm-test-postgres
@@ -56,7 +61,7 @@ services:
     networks:
       - vcm-test-net
 
-  # ── Redis ────────────────────────────────────────────────
+  # ── Redis ──────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     container_name: vcm-test-redis
@@ -69,20 +74,21 @@ services:
     networks:
       - vcm-test-net
 
-  # ── Backend ──────────────────────────────────────────────
+  # ── VCM Backend ────────────────────────────────────────
   backend:
-    image: ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:latest
+    image: *backend-image
     container_name: vcm-test-backend
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://vcm:vcm_pass@postgres:5432/vcm_db
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: test-secret-key-change-in-production
+      SECRET_KEY: test-secret-key-not-for-production
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: VCM@admin2024!
       ADMIN_EMAIL: admin@test.local
       LDAP_ENABLED: "false"
       LOG_LEVEL: DEBUG
+      APP_ENV: development
     ports:
       - "8000:8000"
     depends_on:
@@ -99,15 +105,16 @@ services:
     networks:
       - vcm-test-net
 
-  # ── Frontend ─────────────────────────────────────────────
+  # ── VCM Frontend ───────────────────────────────────────
   frontend:
-    image: ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:latest
+    image: *frontend-image
     container_name: vcm-test-frontend
     restart: unless-stopped
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - vcm-test-net
 

@@ -11,22 +11,37 @@ permissions:
 
 jobs:
 
-  docker-release:
-    name: Docker — Build & Push Release Images
+  # ── Build and push versioned Docker images ─────────────
+  docker:
+    name: Docker — Build & Push
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    outputs:
+      backend-tags:  ${{ steps.meta-backend.outputs.tags }}
+      frontend-tags: ${{ steps.meta-frontend.outputs.tags }}
+      version:       ${{ steps.version.outputs.version }}
+
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@v3
 
-      - name: Backend — metadata
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── Backend ────────────────────────────────────────
+      - name: Backend — Docker metadata
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
@@ -34,6 +49,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=raw,value=latest
 
       - name: Backend — Build & push
@@ -43,10 +59,12 @@ jobs:
           target: production
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Frontend — metadata
+      # ── Frontend ───────────────────────────────────────
+      - name: Frontend — Docker metadata
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
@@ -54,6 +72,7 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
             type=raw,value=latest
 
       - name: Frontend — Build & push
@@ -63,33 +82,32 @@ jobs:
           target: production
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
-          build-args: VITE_API_BASE_URL=http://localhost:8000
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          build-args: VITE_API_BASE_URL=/api
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  github-release:
+  # ── Create GitHub Release with image info ──────────────
+  release:
     name: GitHub — Create Release
     runs-on: ubuntu-latest
-    needs: docker-release
+    needs: docker
     permissions:
       contents: write
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Extract version
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
-
       - name: Extract CHANGELOG notes
         id: changelog
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.docker.outputs.version }}"
           NOTES=$(awk "/^## \[$VERSION\]/{flag=1;next}/^## \[/{flag=0}flag" CHANGELOG.md \
                   | sed '/^---$/d' | sed '/^[[:space:]]*$/d')
           if [ -z "$NOTES" ]; then
-            NOTES="See CHANGELOG.md for details."
+            NOTES="See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for full details."
           fi
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
@@ -98,27 +116,39 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "v${{ steps.version.outputs.version }}"
+          name: "v${{ needs.docker.outputs.version }}"
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ !contains(github.ref_name, '-') }}
           body: |
             ## What's Changed
 
             ${{ steps.changelog.outputs.notes }}
 
+            ---
+
             ## Docker Images
 
-            ```bash
-            docker pull ghcr.io/${{ github.repository }}/backend:${{ steps.version.outputs.version }}
-            docker pull ghcr.io/${{ github.repository }}/frontend:${{ steps.version.outputs.version }}
-            ```
-
-            ## Quick Start
+            Images are published to the [GitHub Container Registry](https://github.com/${{ github.repository }}/pkgs/container/vsphere-compliance-manager%2Fbackend).
 
             ```bash
-            git clone https://github.com/${{ github.repository }}.git
-            cd vsphere-compliance-manager
-            cp .env.example .env
-            docker compose up -d
+            docker pull ghcr.io/${{ github.repository }}/backend:${{ needs.docker.outputs.version }}
+            docker pull ghcr.io/${{ github.repository }}/frontend:${{ needs.docker.outputs.version }}
             ```
-          draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          make_latest: ${{ !contains(github.ref_name, '-') }}
+
+            ## Quick Start with Published Images
+
+            ```bash
+            # Download the test environment compose file
+            curl -LO https://raw.githubusercontent.com/${{ github.repository }}/main/docs/vcsim/docker-compose.vcsim.yml
+
+            # Run with this specific version
+            BACKEND_TAG=${{ needs.docker.outputs.version }} \
+            FRONTEND_TAG=${{ needs.docker.outputs.version }} \
+            docker compose -f docker-compose.vcsim.yml up -d
+            ```
+
+            ## Full Documentation
+
+            - [Deployment Guide](https://github.com/${{ github.repository }}/blob/main/docs/deployment/README.md)
+            - [vcsim Testing Guide](https://github.com/${{ github.repository }}/blob/main/docs/vcsim/README.md)
+            - [API Reference](https://github.com/${{ github.repository }}/blob/main/docs/api/README.md)
