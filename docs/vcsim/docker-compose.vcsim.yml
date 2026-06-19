@@ -20,11 +20,11 @@ services:
 
   # ── vCenter Simulator ──────────────────────────────────
   vcsim:
-    image: ghcr.io/vmware/govmomi/vcsim:latest
+    image: vmware/vcsim:latest
     container_name: vcm-vcsim
     restart: unless-stopped
     command: >
-      -httptest.serve=0.0.0.0:8989
+      -l :8989
       -dc 2
       -cluster 3
       -host 4

@@ -30,8 +30,8 @@ vSphere SOAP/REST API and is compatible with pyVmomi out of the box.
 ```bash
 docker run -d --name vcsim \
   -p 8989:8989 \
-  ghcr.io/vmware/govmomi/vcsim:latest \
-  -httptest.serve=0.0.0.0:8989 \
+  vmware/vcsim:latest \
+  -l :8989 \
   -dc 2 -cluster 3 -host 4 -vm 20 -ds 4 -pod 2
 
 # Verify

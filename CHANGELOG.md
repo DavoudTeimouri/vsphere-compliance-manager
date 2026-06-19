@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remove duplicate `scripts/seed_vcsim.py` (canonical location: `docs/vcsim/seed_vcsim.py`)
 - Remove duplicate `docker-compose.test.yml` (superseded by `docs/vcsim/docker-compose.vcsim.yml`)
 - Remove stale `backend/tests/vcsim/` directory (live vcsim tests moved to `backend/tests/unit/test_vcsim.py`)
-- Fix vcsim image address in `docs/testing/README.md`: `vmware/vcsim:latest` → `ghcr.io/vmware/govmomi/vcsim:latest`
+- Fix vcsim image address across all files: use `vmware/vcsim:latest` (Docker Hub, Verified Publisher) instead of incorrect `ghcr.io/vmware/govmomi/vcsim:latest`
+- Fix vcsim startup flag: `-httptest.serve` → `-l` (current govmomi API)
 - All GHCR image references now use lowercase `davoudteimouri` (Docker registry is case-sensitive)
 
 ### Changed
