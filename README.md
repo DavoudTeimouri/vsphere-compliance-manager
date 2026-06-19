@@ -31,6 +31,7 @@
 - [Features](#features)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
+- [Docker Images](#docker-images)
 - [Installation](#installation)
   - [Docker Compose](#docker-compose)
   - [Kubernetes](#kubernetes)
@@ -39,6 +40,7 @@
 - [Authentication](#authentication)
 - [Usage](#usage)
 - [API Reference](#api-reference)
+- [Testing with vcsim](#testing-with-vcsim)
 - [Development](#development)
 - [Contributing](#contributing)
 - [Security](#security)
@@ -140,36 +142,53 @@ See [docs/architecture/](docs/architecture/) for detailed diagrams.
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Docker 24+ and Docker Compose v2
-- OR: Kubernetes 1.26+ cluster with `kubectl` configured
-- vCenter Server 6.0 or later with read/write API access
+### Option A — Pre-built Images (Recommended)
 
-### 1 — Clone the repository
+No build step required. Pull the latest images directly from the GitHub Container Registry:
 
 ```bash
+# Pull images
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:main
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:main
+```
+
+Then bring up the full stack using the provided compose file:
+
+```bash
+# Clone only to get the compose file and .env.example
 git clone https://github.com/DavoudTeimouri/vsphere-compliance-manager.git
 cd vsphere-compliance-manager
-```
 
-### 2 — Configure environment
-
-```bash
 cp .env.example .env
-# Edit .env with your values (see Configuration section)
-```
+# Edit .env with your values
 
-### 3 — Start with Docker Compose
-
-```bash
 docker compose up -d
 ```
 
 The UI will be available at **http://localhost:3000**
 Default admin credentials: `admin / VCM@admin2024!` *(change immediately)*
 
----
+**Want to test without a real vCenter?**
+Use the included vcsim test environment — see [docs/vcsim/README.md](docs/vcsim/README.md).
 
+```bash
+# Full test environment: vcsim + VCM stack, no vCenter needed
+docker compose -f docs/vcsim/docker-compose.vcsim.yml up -d
+```
+
+### Option B — Build from Source
+
+```bash
+git clone https://github.com/DavoudTeimouri/vsphere-compliance-manager.git
+cd vsphere-compliance-manager
+
+cp .env.example .env
+# Edit .env with your values
+
+docker compose up -d
+```
+
+---
 ## 📦 Installation
 
 ### Docker Compose
@@ -326,6 +345,54 @@ Full API docs: [docs/api/README.md](docs/api/README.md)
 
 ---
 
+## 🐳 Docker Images
+
+Pre-built images are published to the GitHub Container Registry on every push to `main`
+and on every tagged release.
+
+| Image | Tags |
+|-------|------|
+| `ghcr.io/davoudteimouri/vsphere-compliance-manager/backend` | `main`, `latest`, `1.x.x` |
+| `ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend` | `main`, `latest`, `1.x.x` |
+
+```bash
+# Latest development build (main branch)
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:main
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:main
+
+# Specific stable release (once v1.0.0 is published)
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:1.0.0
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:1.0.0
+```
+
+All images are available at:
+**[github.com/DavoudTeimouri/vsphere-compliance-manager/pkgs/container](https://github.com/DavoudTeimouri/vsphere-compliance-manager/pkgs/container/vsphere-compliance-manager%2Fbackend)**
+
+---
+
+## 🧪 Testing with vcsim
+
+VCM includes a complete test environment based on
+[vcsim](https://github.com/vmware/govmomi/tree/main/vcsim) — the official VMware
+vCenter simulator. It requires no real vCenter license and covers all VCM features.
+
+```bash
+# Start full test stack using pre-built GHCR images
+docker compose -f docs/vcsim/docker-compose.vcsim.yml up -d
+
+# Seed vcsim with realistic randomized VM names
+pip install pyVmomi
+python3 docs/vcsim/seed_vcsim.py --seed 42
+
+# Use a different seed each run to cover more scenarios
+python3 docs/vcsim/seed_vcsim.py
+```
+
+See the [vcsim Testing Guide](docs/vcsim/README.md) for full setup instructions,
+test scenarios, and API examples.
+
+---
+
 ## 🛠️ Development
 
 ### Requirements
@@ -379,17 +446,13 @@ pytest tests/unit/ -v --cov=app
 # Backend integration tests (requires PostgreSQL + Redis)
 pytest tests/integration/ -v
 
-# vcsim tests — test against simulated vCenter (no real vCenter needed)
-vcsim -dc 2 -cluster 2 -host 4 -vm 20 -ds 4 -httptest.serve 127.0.0.1:8989 &
-pytest tests/vcsim/ -v -s
-
 # Frontend tests
 cd frontend
 npm test
 ```
 
-> **vcsim** is a VMware vCenter simulator — it creates a full inventory (Datacenters, Clusters, Hosts, VMs, Datastores) without needing a real vCenter license. Each test run randomises VM naming patterns to cover different compliance scenarios automatically.
-> See [docs/vcsim-testing.md](docs/vcsim-testing.md) for full details.
+> **No vCenter?** Use the included vcsim test environment to test all VCM features
+> against a simulated vCenter — see [docs/vcsim/README.md](docs/vcsim/README.md).
 
 ### Code Quality
 
