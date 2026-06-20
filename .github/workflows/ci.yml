@@ -65,10 +65,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install deps
         run: pip install -r requirements.txt -r requirements-dev.txt
-
       - name: Run migrations
         env:
           DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
@@ -76,7 +74,6 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           LDAP_ENABLED: "false"
         run: alembic upgrade head
-
       - name: Unit tests
         env:
           DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
@@ -84,7 +81,6 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           LDAP_ENABLED: "false"
         run: pytest tests/unit/ -v --cov=app --cov-report=xml --cov-report=term-missing
-
       - name: Integration tests
         env:
           DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
@@ -149,7 +145,9 @@ jobs:
           retention-days: 7
 
   # ────────────────────────────────────────────────────────
-  # DOCKER
+  # DOCKER — builds on push to main/develop
+  # Packages appear under repository automatically when
+  # image name matches ghcr.io/OWNER/REPO/...
   # ────────────────────────────────────────────────────────
 
   docker-build:
@@ -160,6 +158,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -176,6 +175,11 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend
+          # org.opencontainers.image labels link the package to this repo
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=VCM Backend — vSphere Compliance Manager
+            org.opencontainers.image.licenses=MIT
           tags: |
             type=ref,event=branch
             type=sha,prefix=sha-,format=short
@@ -197,6 +201,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=VCM Frontend — vSphere Compliance Manager
+            org.opencontainers.image.licenses=MIT
           tags: |
             type=ref,event=branch
             type=sha,prefix=sha-,format=short
@@ -213,3 +221,14 @@ jobs:
           build-args: VITE_API_BASE_URL=http://localhost:8000
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Job summary
+        run: |
+          echo "## 🐳 Docker Images Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tags |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend  | \`${{ steps.meta-backend.outputs.tags }}\`  |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`${{ steps.meta-frontend.outputs.tags }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Packages:** https://github.com/${{ github.repository }}/pkgs/container/vsphere-compliance-manager%2Fbackend" >> $GITHUB_STEP_SUMMARY

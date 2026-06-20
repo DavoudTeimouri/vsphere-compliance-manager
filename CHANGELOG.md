@@ -17,8 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.2-beta] — 2026-06-19
 
-### Fixed
-- **Root cause of login failure:** Replace `passlib[bcrypt]` with direct `bcrypt`
+### Changed
+- Add `org.opencontainers.image.source`, `.description`, and `.licenses` labels
+  to all Docker images in both CI and Release workflows — this links Packages
+  to the repository automatically on GHCR so they appear under the repo's
+  Packages sidebar
   library calls — `passlib 1.7.4` is incompatible with `bcrypt 4.x` and silently
   fails password verification, causing all logins to return 401
 - Remove `passlib` from requirements entirely; `security.py` now uses
