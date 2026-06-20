@@ -15,6 +15,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.3-beta] — 2026-06-19
+
+### Fixed
+- Add `scripts/reset_admin.py` — resets admin password or creates admin user
+  from inside the container when login fails:
+  ```bash
+  docker exec vcm-test-backend python scripts/reset_admin.py
+  docker exec vcm-test-backend python scripts/reset_admin.py --password "NewPass@123"
+  ```
+- Update `scripts/seed.py` with verbose output so startup issues are visible in logs
+- Add `scripts/__init__.py`
+
+### Changed
+- Add OCI image labels to CI and Release workflows so packages appear
+  linked under repository sidebar on GHCR
+
+---
+
 ## [1.3.2-beta] — 2026-06-19
 
 ### Changed
@@ -195,7 +213,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.2-beta...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.3-beta...HEAD
+[1.3.3-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.2-beta...v1.3.3-beta
 [1.3.2-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.1-beta...v1.3.2-beta
 [1.3.1-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.0-beta...v1.3.1-beta
 [1.3.0-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.5-beta...v1.3.0-beta
