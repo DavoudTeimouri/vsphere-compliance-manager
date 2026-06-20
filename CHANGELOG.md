@@ -15,6 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.2-beta] — 2026-06-19
+
+### Fixed
+- **Root cause of login failure:** Replace `passlib[bcrypt]` with direct `bcrypt`
+  library calls — `passlib 1.7.4` is incompatible with `bcrypt 4.x` and silently
+  fails password verification, causing all logins to return 401
+- Remove `passlib` from requirements entirely; `security.py` now uses
+  `bcrypt.checkpw()` and `bcrypt.hashpw()` directly
+- Upgrade `bcrypt` to `4.1.3` (latest stable)
+- Admin user and default patterns now created automatically on first startup
+  via `seed_initial_data()` inside FastAPI lifespan — no manual seed step needed
+- Fix broken `#documentation` anchor in README header → `#api-reference`
+- Fix vcsim image to `vmware/vcsim:latest` (Docker Hub Verified Publisher)
+- Fix vcsim startup flag from deprecated `-httptest.serve` to `-l`
+
+---
+
 ## [1.3.1-beta] — 2026-06-19
 
 ### Fixed
@@ -175,7 +192,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.1-beta...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.2-beta...HEAD
+[1.3.2-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.1-beta...v1.3.2-beta
 [1.3.1-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.0-beta...v1.3.1-beta
 [1.3.0-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.5-beta...v1.3.0-beta
 [1.2.5-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.2.4-beta...v1.2.5-beta

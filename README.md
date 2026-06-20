@@ -19,7 +19,7 @@
 
 **Automate VMware DRS Anti-Affinity rules and Storage placement compliance across your entire vCenter infrastructure.**
 
-[📖 Documentation](#documentation) · [🚀 Quick Start](#quick-start) · [🐛 Report Bug](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues) · [💡 Request Feature](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues)
+[📖 Documentation](#api-reference) · [🚀 Quick Start](#quick-start) · [🐛 Report Bug](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues) · [💡 Request Feature](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues)
 
 </div>
 
