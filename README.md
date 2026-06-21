@@ -25,7 +25,7 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -33,9 +33,6 @@
 - [Quick Start](#quick-start)
 - [Docker Images](#docker-images)
 - [Installation](#installation)
-  - [Docker Compose](#docker-compose)
-  - [Kubernetes](#kubernetes)
-  - [Helm Chart](#helm-chart)
 - [Configuration](#configuration)
 - [Authentication](#authentication)
 - [Usage](#usage)
@@ -49,7 +46,7 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
 **vSphere Compliance Manager (VCM)** is a production-grade, containerized platform that continuously monitors and enforces VMware infrastructure compliance policies. It connects to vCenter Server (v6.x and above), analyzes VM placement, DRS rules, and storage distribution — then provides actionable reports, automated remediation, and full audit history.
 
@@ -57,7 +54,7 @@
 
 ---
 
-## ✨ Features
+## Features
 
 ### 🔌 vCenter Integration
 - Supports **vCenter Server 6.0, 6.5, 6.7, 7.0, 8.0**
@@ -109,7 +106,7 @@
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -140,7 +137,7 @@ See [docs/architecture/](docs/architecture/) for detailed diagrams.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Option A — Pre-built Images (Recommended)
 
@@ -189,7 +186,7 @@ docker compose up -d
 ```
 
 ---
-## 📦 Installation
+## Installation
 
 ### Docker Compose
 
@@ -235,7 +232,7 @@ See [`deploy/helm/values.yaml`](deploy/helm/values.yaml) for all configurable op
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 Copy `.env.example` to `.env` and fill in the values:
 
@@ -276,7 +273,7 @@ All sensitive values in the database are additionally encrypted with the `ENCRYP
 
 ---
 
-## 🔐 Authentication
+## Authentication
 
 ### Local Authentication
 Users are created via the Admin panel or seeded at startup. Passwords are hashed with **bcrypt** (cost factor 12).
@@ -294,7 +291,7 @@ Use the **Settings → Authentication** page to test the LDAP connection and val
 
 ---
 
-## 📖 Usage
+## Usage
 
 ### 1. Add a vCenter Connection
 Navigate to **Settings → vCenter Connections** → click **Add Connection**. Provide the hostname, port, and credentials. Use **Test Connection** to verify before saving.
@@ -322,7 +319,7 @@ Go to **Analysis** → select your vCenter → click **Run Analysis**. The engin
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 The REST API is documented with Swagger UI:
 - **Development**: http://localhost:8000/docs
@@ -345,7 +342,7 @@ Full API docs: [docs/api/README.md](docs/api/README.md)
 
 ---
 
-## 🐳 Docker Images
+## Docker Images
 
 Pre-built images are published to the GitHub Container Registry on every push to `main`
 and on every tagged release.
@@ -370,7 +367,7 @@ All images are available at:
 
 ---
 
-## 🧪 Testing with vcsim
+## Testing with vcsim
 
 VCM includes a complete test environment based on
 [vcsim](https://github.com/vmware/govmomi/tree/main/vcsim) — the official VMware
@@ -393,7 +390,7 @@ test scenarios, and API examples.
 
 ---
 
-## 🛠️ Development
+## Development
 
 ### Requirements
 - Python 3.11+
@@ -482,7 +479,7 @@ alembic downgrade -1
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a PR.
 
@@ -508,7 +505,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
 
 ---
 
-## 🔒 Security
+## Security
 
 - All secrets are stored encrypted (AES-256 via Fernet)
 - Passwords hashed with bcrypt (cost 12)
@@ -522,13 +519,13 @@ To report a security vulnerability, please see [SECURITY.md](SECURITY.md). **Do 
 
 ---
 
-## 📄 Changelog
+## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 
 ---
 
-## 📜 License
+## License
 
 This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
 

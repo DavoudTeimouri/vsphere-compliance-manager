@@ -1,3 +1,4 @@
+# ── Frontend Deployment ───────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,23 +7,31 @@ metadata:
   labels:
     app: vcm-frontend
     app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: vsphere-compliance-manager
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: vcm-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   template:
     metadata:
       labels:
         app: vcm-frontend
+        app.kubernetes.io/component: frontend
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:
-          imagePullPolicy: Always
+          image: ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:${VCM_VERSION}
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
               name: http
+              protocol: TCP
           resources:
             requests:
               cpu: 50m
@@ -36,12 +45,24 @@ spec:
               port: 80
             initialDelaySeconds: 10
             periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
 ---
+# ── Frontend Service ──────────────────────────────────────
 apiVersion: v1
 kind: Service
 metadata:
   name: vcm-frontend
   namespace: vcm
+  labels:
+    app: vcm-frontend
+    app.kubernetes.io/component: frontend
 spec:
   selector:
     app: vcm-frontend
@@ -49,7 +70,11 @@ spec:
     - port: 80
       targetPort: 80
       name: http
+      protocol: TCP
+  type: ClusterIP
+
 ---
+# ── Ingress ───────────────────────────────────────────────
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -58,13 +83,21 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
 spec:
   ingressClassName: nginx
   rules:
-    - host: vcm.example.com          # Override in overlay
+    - host: vcm.example.com    # Override in overlay
       http:
         paths:
           - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: vcm-backend
+                port:
+                  number: 8000
+          - path: /uploads
             pathType: Prefix
             backend:
               service:
@@ -81,4 +114,4 @@ spec:
   tls:
     - hosts:
         - vcm.example.com
-      secretName: vcm-tls
+      secretName: vcm-tls-secret

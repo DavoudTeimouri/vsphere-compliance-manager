@@ -1,0 +1,114 @@
+# ── PostgreSQL StatefulSet ────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vcm-postgres
+  namespace: vcm
+  labels:
+    app: vcm-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: vsphere-compliance-manager
+spec:
+  serviceName: vcm-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vcm-postgres
+  template:
+    metadata:
+      labels:
+        app: vcm-postgres
+        app.kubernetes.io/component: database
+    spec:
+      securityContext:
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: vcm-postgres-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: vcm-postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: vcm_db
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "vcm", "-d", "vcm_db"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "vcm", "-d", "vcm_db"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+        labels:
+          app.kubernetes.io/component: storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 20Gi
+
+---
+# ── PostgreSQL Service ────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: vcm-postgres
+  namespace: vcm
+  labels:
+    app: vcm-postgres
+    app.kubernetes.io/component: database
+spec:
+  selector:
+    app: vcm-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  type: ClusterIP
+  clusterIP: None   # Headless for StatefulSet DNS
+
+---
+# ── PostgreSQL Secret Template ────────────────────────────
+# Replace values before applying:
+# kubectl create secret generic vcm-postgres-secret \
+#   --from-literal=POSTGRES_USER=vcm \
+#   --from-literal=POSTGRES_PASSWORD=REPLACE_ME \
+#   -n vcm
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vcm-postgres-secret
+  namespace: vcm
+type: Opaque
+stringData:
+  POSTGRES_USER: vcm
+  POSTGRES_PASSWORD: REPLACE_ME

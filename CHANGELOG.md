@@ -15,6 +15,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.4-beta] — 2026-06-19
+
+### Changed
+- **CI workflow:** Removed Docker build job entirely — images are now built
+  ONLY by `release.yml` on tag push, preventing unversioned `:main` images
+  from being pushed to GHCR on every commit
+- **README TOC:** Simplified to H2-only links — sub-items caused scroll
+  failures in some browsers
+- **Kubernetes manifests completely restructured:**
+  - PostgreSQL converted from Deployment to `StatefulSet` with
+    `volumeClaimTemplates` — Kubernetes manages PVCs automatically
+  - Redis converted from Deployment to `StatefulSet` with
+    `volumeClaimTemplates` and persistence enabled (`appendonly yes`)
+  - Volumes split into separate files under `k8s/base/volumes/`:
+    `pvc-uploads.yaml`, `pvc-postgres.yaml`, `pvc-redis.yaml`
+  - Backend manifest adds `HorizontalPodAutoscaler` (min 2, max 6 replicas)
+    and `initContainer` to wait for PostgreSQL before starting
+  - Frontend manifest adds `/uploads` path to Ingress
+  - All image paths lowercased (`davoudteimouri` not `DavoudTeimouri`)
+  - `kustomization.yaml` updated to include all new resources
+  - Prod overlay patches for StorageClass, replica counts, and hostname
+- **Deployment guide completely rewritten** with:
+  - Volume details and backup/restore commands for both Docker and K8s
+  - Upgrade procedure for both Compose and Kubernetes
+  - Production checklist
+  - Admin password reset instructions
+
+---
+
 ## [1.3.3-beta] — 2026-06-19
 
 ### Fixed
@@ -244,7 +273,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.3-beta...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.4-beta...HEAD
+[1.3.4-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.3-beta...v1.3.4-beta
 [1.3.3-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.2-beta...v1.3.3-beta
 [1.3.2-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.1-beta...v1.3.2-beta
 [1.3.1-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.0-beta...v1.3.1-beta

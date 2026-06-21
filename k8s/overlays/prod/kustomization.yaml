@@ -4,8 +4,9 @@ kind: Kustomization
 bases:
   - ../../base
 
-# Override replica counts for production
+# Production overrides
 patches:
+  # Scale backend to 3 replicas
   - target:
       kind: Deployment
       name: vcm-backend
@@ -13,6 +14,8 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 3
+
+  # Scale frontend to 2 replicas
   - target:
       kind: Deployment
       name: vcm-frontend
@@ -20,6 +23,8 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 2
+
+  # Set production hostname in Ingress
   - target:
       kind: Ingress
       name: vcm-ingress
@@ -30,6 +35,27 @@ patches:
       - op: replace
         path: /spec/tls/0/hosts/0
         value: vcm.your-domain.com
+      - op: replace
+        path: /spec/tls/0/secretName
+        value: vcm-tls-secret
+
+  # Increase postgres storage for production
+  - target:
+      kind: StatefulSet
+      name: vcm-postgres
+    patch: |-
+      - op: replace
+        path: /spec/volumeClaimTemplates/0/spec/resources/requests/storage
+        value: 50Gi
+
+  # Set StorageClass for production PVCs
+  - target:
+      kind: PersistentVolumeClaim
+      name: vcm-uploads
+    patch: |-
+      - op: replace
+        path: /spec/storageClassName
+        value: nfs-client
 
 # Pin to specific release — update this on every upgrade
 images:

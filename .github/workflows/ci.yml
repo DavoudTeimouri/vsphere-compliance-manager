@@ -6,16 +6,9 @@ on:
   pull_request:
     branches: [main, develop]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository }}
-
 jobs:
 
-  # ────────────────────────────────────────────────────────
-  # BACKEND
-  # ────────────────────────────────────────────────────────
-
+  # ── Backend ──────────────────────────────────────────────
   backend-lint:
     name: Backend — Lint & Type Check
     runs-on: ubuntu-latest
@@ -59,14 +52,12 @@ jobs:
           --health-interval 10s
           --health-timeout 3s
           --health-retries 5
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install deps
-        run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: pip install -r requirements.txt -r requirements-dev.txt
       - name: Run migrations
         env:
           DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
@@ -89,10 +80,7 @@ jobs:
           LDAP_ENABLED: "false"
         run: pytest tests/integration/ -v --cov=app --cov-append --cov-report=xml
 
-  # ────────────────────────────────────────────────────────
-  # FRONTEND
-  # ────────────────────────────────────────────────────────
-
+  # ── Frontend ─────────────────────────────────────────────
   frontend-lint:
     name: Frontend — Lint & Type Check
     runs-on: ubuntu-latest
@@ -144,91 +132,6 @@ jobs:
           path: frontend/dist/
           retention-days: 7
 
-  # ────────────────────────────────────────────────────────
-  # DOCKER — builds on push to main/develop
-  # Packages appear under repository automatically when
-  # image name matches ghcr.io/OWNER/REPO/...
-  # ────────────────────────────────────────────────────────
-
-  docker-build:
-    name: Docker — Build & Push to GHCR
-    runs-on: ubuntu-latest
-    needs: [backend-test, frontend-build]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Backend — metadata
-        id: meta-backend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend
-          # org.opencontainers.image labels link the package to this repo
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=VCM Backend — vSphere Compliance Manager
-            org.opencontainers.image.licenses=MIT
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Backend — Build & push
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          target: production
-          push: true
-          tags: ${{ steps.meta-backend.outputs.tags }}
-          labels: ${{ steps.meta-backend.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Frontend — metadata
-        id: meta-frontend
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=VCM Frontend — vSphere Compliance Manager
-            org.opencontainers.image.licenses=MIT
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Frontend — Build & push
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          target: production
-          push: true
-          tags: ${{ steps.meta-frontend.outputs.tags }}
-          labels: ${{ steps.meta-frontend.outputs.labels }}
-          build-args: VITE_API_BASE_URL=http://localhost:8000
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Job summary
-        run: |
-          echo "## 🐳 Docker Images Published" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | Tags |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend  | \`${{ steps.meta-backend.outputs.tags }}\`  |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | \`${{ steps.meta-frontend.outputs.tags }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Packages:** https://github.com/${{ github.repository }}/pkgs/container/vsphere-compliance-manager%2Fbackend" >> $GITHUB_STEP_SUMMARY
+  # NOTE: Docker images are built ONLY by the Release workflow (release.yml)
+  # triggered on git tag push (v*.*.*). CI does NOT build or push images
+  # to avoid polluting GHCR with unversioned :main tags.

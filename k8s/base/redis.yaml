@@ -1,0 +1,85 @@
+# ── Redis StatefulSet ─────────────────────────────────────
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vcm-redis
+  namespace: vcm
+  labels:
+    app: vcm-redis
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: vsphere-compliance-manager
+spec:
+  serviceName: vcm-redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vcm-redis
+  template:
+    metadata:
+      labels:
+        app: vcm-redis
+        app.kubernetes.io/component: cache
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - redis-server
+            - --maxmemory 256mb
+            - --maxmemory-policy allkeys-lru
+            - --appendonly yes
+            - --appendfsync everysec
+          ports:
+            - containerPort: 6379
+              name: redis
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          app.kubernetes.io/component: storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
+
+---
+# ── Redis Service ─────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: vcm-redis
+  namespace: vcm
+  labels:
+    app: vcm-redis
+    app.kubernetes.io/component: cache
+spec:
+  selector:
+    app: vcm-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis
+  type: ClusterIP
+  clusterIP: None   # Headless for StatefulSet DNS

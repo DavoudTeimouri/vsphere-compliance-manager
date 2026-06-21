@@ -1,0 +1,46 @@
+# ── Persistent Volume Claims ────────────────────────────
+# All PVCs are defined here for clarity.
+# Requires a StorageClass that supports the specified accessModes.
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vcm-postgres-data
+  namespace: vcm
+  labels:
+    app.kubernetes.io/component: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # storageClassName: standard   # uncomment and set to your StorageClass
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vcm-redis-data
+  namespace: vcm
+  labels:
+    app.kubernetes.io/component: cache
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vcm-uploads
+  namespace: vcm
+  labels:
+    app.kubernetes.io/component: backend
+spec:
+  accessModes:
+    - ReadWriteMany    # Needed when backend runs with replicas > 1
+  resources:
+    requests:
+      storage: 5Gi
