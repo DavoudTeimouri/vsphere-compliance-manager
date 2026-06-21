@@ -2,19 +2,17 @@ version: "3.9"
 
 # VCM Test Environment — vcsim + full VCM stack
 #
-# Uses pre-built images from GHCR. No build step required.
-#
+# Always uses the latest release tag. Update VCM_VERSION to upgrade.
 # Usage:
 #   docker compose -f docker-compose.vcsim.yml up -d
 #   docker compose -f docker-compose.vcsim.yml down -v
-#
-# Override image tag:
-#   BACKEND_TAG=main FRONTEND_TAG=main docker compose -f docker-compose.vcsim.yml up -d
 
 name: vcm-test
 
-x-image-backend:  &backend-image  ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:${BACKEND_TAG:-main}
-x-image-frontend: &frontend-image ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:${FRONTEND_TAG:-main}
+x-vcm-version: &vcm-version ${VCM_VERSION:-1.3.3-beta}
+
+x-image-backend:  &backend-image  ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:${VCM_VERSION:-1.3.3-beta}
+x-image-frontend: &frontend-image ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:${VCM_VERSION:-1.3.3-beta}
 
 services:
 
@@ -120,7 +118,9 @@ services:
 
 volumes:
   vcm_test_pgdata:
+    name: vcm_test_pgdata
 
 networks:
   vcm-test-net:
+    name: vcm-test-net
     driver: bridge

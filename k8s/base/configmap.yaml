@@ -16,7 +16,7 @@ data:
   REDIS_URL: "redis://vcm-redis:6379/0"
 ---
 # Template only — replace values before applying
-# Use: kubectl create secret generic vcm-secrets --from-env-file=.env -n vcm
+# kubectl create secret generic vcm-secrets --from-env-file=.env -n vcm
 apiVersion: v1
 kind: Secret
 metadata:

@@ -148,8 +148,8 @@ No build step required. Pull the latest images directly from the GitHub Containe
 
 ```bash
 # Pull images
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:main
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:main
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:1.3.3-beta
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:1.3.3-beta
 ```
 
 Then bring up the full stack using the provided compose file:
@@ -357,8 +357,8 @@ and on every tagged release.
 
 ```bash
 # Latest development build (main branch)
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:main
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:main
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:1.3.3-beta
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:1.3.3-beta
 
 # Specific stable release (once v1.0.0 is published)
 docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:1.0.0

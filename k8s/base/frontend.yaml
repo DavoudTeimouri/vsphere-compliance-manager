@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/DavoudTeimouri/vsphere-compliance-manager/frontend:latest
+          image: ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:
           imagePullPolicy: Always
           ports:
             - containerPort: 80

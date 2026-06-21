@@ -18,6 +18,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.3-beta] — 2026-06-19
 
 ### Fixed
+- All Docker image references now use pinned release tag `1.3.3-beta` instead
+  of `main` — `main` is a branch tag that changes with every push and pulls
+  potentially broken images
+- All GHCR image paths converted to lowercase (`davoudteimouri` not `DavoudTeimouri`)
+  — Docker registry is case-sensitive and uppercase paths silently fail on some hosts
+- `docker-compose.yml` now uses GHCR images with `VCM_VERSION` variable
+  (default `1.3.3-beta`) instead of building from source
+- `docker-compose.vcsim.yml` uses `VCM_VERSION` variable consistently
+- All volumes now have explicit `name:` fields to prevent name collisions
+- `k8s/base/backend.yaml` and `k8s/base/frontend.yaml` image paths lowercased
+- `k8s/overlays/prod/kustomization.yaml` image tags pinned to `1.3.3-beta`
+- `docs/deployment/README.md` Helm tag updated to `1.3.3-beta`
+- `docs/vcsim/README.md` pull commands updated to `1.3.3-beta`
+- Add `scripts/reset_admin.py` — resets or creates admin user from inside container:
+  ```bash
+  docker exec vcm-test-backend python scripts/reset_admin.py
+  docker exec vcm-test-backend python scripts/reset_admin.py --password "NewPass@123"
+  ```
+- `scripts/seed.py` updated with verbose output visible in container logs
+- Add OCI image labels to CI and Release workflows — links packages to repository
+  on GHCR automatically
+
+### Changed
+- Image tag strategy: `VCM_VERSION` env var controls which image is pulled;
+  update this variable on every upgrade instead of editing individual files
+
+---
+
+## [1.3.3-beta] — 2026-06-19
+
+### Fixed
 - Add `scripts/reset_admin.py` — resets admin password or creates admin user
   from inside the container when login fails:
   ```bash

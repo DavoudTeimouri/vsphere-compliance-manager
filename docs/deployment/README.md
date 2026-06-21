@@ -94,7 +94,7 @@ helm install vcm ./deploy/helm \
 
 # Upgrade
 helm upgrade vcm ./deploy/helm --reuse-values \
-  --set image.tag="1.1.0"
+  --set image.tag="1.3.3-beta"
 ```
 
 ---
