@@ -15,6 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.4-beta] — 2026-06-22
+
+### Fixed
+- **CRITICAL:** Fix bcrypt password verification issue in `backend/app/core/security.py`
+  - Previous implementation called `.encode("utf-8")` twice on hashed passwords from the database
+  - bcrypt.checkpw() expects hashed_password as bytes, not double-encoded string
+  - Login with default admin credentials now works correctly
+  - All local user authentication now properly verifies passwords
+  - LDAP authentication fallback now works when local user check fails
+
+### Changed
+- Improve error handling in `verify_password()` to gracefully handle type mismatches
+- Add type checking to convert string hashes to bytes before bcrypt verification
+
+---
+
 ## [1.3.3-beta] — 2026-06-19
 
 ### Fixed
@@ -46,24 +62,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.3.3-beta] — 2026-06-19
-
-### Fixed
-- Add `scripts/reset_admin.py` — resets admin password or creates admin user
-  from inside the container when login fails:
-  ```bash
-  docker exec vcm-test-backend python scripts/reset_admin.py
-  docker exec vcm-test-backend python scripts/reset_admin.py --password "NewPass@123"
-  ```
-- Update `scripts/seed.py` with verbose output so startup issues are visible in logs
-- Add `scripts/__init__.py`
-
-### Changed
-- Add OCI image labels to CI and Release workflows so packages appear
-  linked under repository sidebar on GHCR
-
----
-
 ## [1.3.2-beta] — 2026-06-19
 
 ### Changed
@@ -71,10 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to all Docker images in both CI and Release workflows — this links Packages
   to the repository automatically on GHCR so they appear under the repo's
   Packages sidebar
-  library calls — `passlib 1.7.4` is incompatible with `bcrypt 4.x` and silently
-  fails password verification, causing all logins to return 401
-- Remove `passlib` from requirements entirely; `security.py` now uses
-  `bcrypt.checkpw()` and `bcrypt.hashpw()` directly
+
+### Fixed
+- Remove passlib dependency completely — `passlib 1.7.4` incompatible with `bcrypt 4.x`
+  and silently failed password verification, causing all logins to return 401
+- `security.py` now uses `bcrypt.checkpw()` and `bcrypt.hashpw()` directly
 - Upgrade `bcrypt` to `4.1.3` (latest stable)
 - Admin user and default patterns now created automatically on first startup
   via `seed_initial_data()` inside FastAPI lifespan — no manual seed step needed
@@ -244,7 +243,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.3-beta...HEAD
+[Unreleased]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.4-beta...HEAD
+[1.3.4-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.3-beta...v1.3.4-beta
 [1.3.3-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.2-beta...v1.3.3-beta
 [1.3.2-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.1-beta...v1.3.2-beta
 [1.3.1-beta]: https://github.com/DavoudTeimouri/vsphere-compliance-manager/compare/v1.3.0-beta...v1.3.1-beta
