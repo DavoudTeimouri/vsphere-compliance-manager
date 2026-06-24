@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
@@ -12,6 +12,32 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+
+def create_enums() -> None:
+    """Create PostgreSQL ENUM types if they do not already exist."""
+    enums = [
+        ("userrole",      ("admin", "operator", "viewer")),
+        ("analysistype",  ("drs", "storage", "full")),
+        ("analysisstatus",("pending", "running", "completed", "failed")),
+    ]
+    with engine.connect() as conn:
+        for name, values in enums:
+            vals = ", ".join(f"'{v}'" for v in values)
+            conn.execute(text(
+                f"DO $$ BEGIN "
+                f"  CREATE TYPE {name} AS ENUM ({vals}); "
+                f"EXCEPTION WHEN duplicate_object THEN NULL; "
+                f"END $$;"
+            ))
+        conn.commit()
+
+
+def init_db() -> None:
+    """Create enum types then all tables. Safe to call on every startup."""
+    create_enums()
+    Base.metadata.create_all(bind=engine)
+
 
 def get_db():
     db = SessionLocal()

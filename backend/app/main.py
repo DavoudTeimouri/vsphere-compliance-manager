@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 import time
 
 from app.api import auth, users, vcenter, analysis, reports, settings, dashboard
-from app.core.database import engine, Base
+from app.core.database import engine, Base, init_db
 from app.core.scheduler import start_scheduler, stop_scheduler
 from app.core.logging_config import setup_logging, get_logger
 
@@ -68,7 +68,7 @@ def seed_initial_data() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("VCM starting up")
-    Base.metadata.create_all(bind=engine)
+    init_db()
     seed_initial_data()
     start_scheduler()
     logger.info("VCM ready")

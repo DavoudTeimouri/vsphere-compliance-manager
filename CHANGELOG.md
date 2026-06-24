@@ -2,6 +2,22 @@
 
 ---
 
+## [1.3.6-beta] — 2026-06-24
+
+### Fixed
+- **Critical startup crash:** `CREATE TYPE userrole AS ENUM` failed with
+  `UniqueViolation` when PostgreSQL volume already existed from a previous run.
+  Root cause: SQLAlchemy `create_all()` does not check if ENUM types already
+  exist in PostgreSQL. Fixed by:
+  1. All `Column(Enum(...))` changed to `Column(ENUM(..., create_type=False))`
+     in `models.py` — tells SQLAlchemy never to emit `CREATE TYPE`
+  2. New `create_enums()` function in `database.py` uses PostgreSQL
+     `DO $$ BEGIN CREATE TYPE ... EXCEPTION WHEN duplicate_object THEN NULL END $$`
+     — idempotent, safe on every startup whether DB is new or existing
+  3. `init_db()` replaces bare `create_all()` in `main.py` lifespan
+- Remove obsolete `version:` field from all docker-compose files
+  (caused warning: "the attribute version is obsolete")
+
 ## [1.3.5-beta] — 2026-06-19
 
 ### Fixed
