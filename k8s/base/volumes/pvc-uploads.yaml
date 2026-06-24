@@ -3,9 +3,13 @@ kind: PersistentVolumeClaim
 metadata:
   name: vcm-uploads
   namespace: vcm
+  labels:
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: vsphere-compliance-manager
 spec:
   accessModes:
     - ReadWriteMany
   resources:
     requests:
       storage: 5Gi
+  storageClassName: ""   # Set your StorageClass, e.g. nfs-client

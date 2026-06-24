@@ -6,11 +6,12 @@ namespace: vcm
 resources:
   - namespace.yaml
   - configmap.yaml
-  - pvc.yaml
+  - postgres.yaml
+  - redis.yaml
+  - volumes/pvc-uploads.yaml
   - backend.yaml
   - frontend.yaml
 
 commonLabels:
   app.kubernetes.io/name: vsphere-compliance-manager
-  app.kubernetes.io/version: "1.0.0"
   app.kubernetes.io/managed-by: kustomize

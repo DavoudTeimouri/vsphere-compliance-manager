@@ -20,7 +20,7 @@ Examples of unacceptable behavior:
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening an issue at **[github.com/DavoudTeimouri/vsphere-compliance-manager/issues](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues)** with the label `conduct`. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening an issue at **[github.com/davoudteimouri/vsphere-compliance-manager/issues](https://github.com/davoudteimouri/vsphere-compliance-manager/issues)** with the label `conduct`. All complaints will be reviewed and investigated promptly and fairly.
 
 ## Attribution
 

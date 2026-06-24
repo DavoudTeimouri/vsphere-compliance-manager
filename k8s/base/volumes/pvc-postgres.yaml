@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vcm-postgres-data
+  namespace: vcm
+  labels:
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: vsphere-compliance-manager
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: ""   # Set your StorageClass, e.g. standard

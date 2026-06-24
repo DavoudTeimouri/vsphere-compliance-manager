@@ -28,12 +28,12 @@ This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By particip
 1. **Fork** the repository on GitHub
 2. **Clone** your fork locally:
    ```bash
-   git clone https://github.com/DavoudTeimouri/vsphere-compliance-manager.git
+   git clone https://github.com/davoudteimouri/vsphere-compliance-manager.git
    cd vsphere-compliance-manager
    ```
 3. Add the upstream remote:
    ```bash
-   git remote add upstream https://github.com/DavoudTeimouri/vsphere-compliance-manager.git
+   git remote add upstream https://github.com/davoudteimouri/vsphere-compliance-manager.git
    ```
 4. Create a feature branch off `develop`:
    ```bash

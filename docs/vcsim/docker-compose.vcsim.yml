@@ -1,20 +1,15 @@
 version: "3.9"
 
-# VCM Test Environment — vcsim + full VCM stack
-#
-# Uses pre-built images from GHCR. No build step required.
+# VCM Test Environment
+# Mirrors production structure: StatefulSets replaced by named volumes.
+# Uses pre-built GHCR images — no build step required.
 #
 # Usage:
-#   docker compose -f docker-compose.vcsim.yml up -d
+#   VCM_VERSION=1.3.4-beta docker compose -f docker-compose.vcsim.yml up -d
+#   docker compose -f docker-compose.vcsim.yml logs -f backend
 #   docker compose -f docker-compose.vcsim.yml down -v
-#
-# Override image tag:
-#   BACKEND_TAG=main FRONTEND_TAG=main docker compose -f docker-compose.vcsim.yml up -d
 
 name: vcm-test
-
-x-image-backend:  &backend-image  ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:${BACKEND_TAG:-main}
-x-image-frontend: &frontend-image ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:${FRONTEND_TAG:-main}
 
 services:
 
@@ -49,8 +44,9 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: vcm
-      POSTGRES_PASSWORD: vcm_pass
+      POSTGRES_PASSWORD: vcm_test_pass
       POSTGRES_DB: vcm_db
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - vcm_test_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -58,6 +54,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - vcm-test-net
 
@@ -66,6 +63,14 @@ services:
     image: redis:7-alpine
     container_name: vcm-test-redis
     restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+    volumes:
+      - vcm_test_redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -76,21 +81,27 @@ services:
 
   # ── VCM Backend ────────────────────────────────────────
   backend:
-    image: *backend-image
+    image: ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:${VCM_VERSION:-1.3.4-beta}
     container_name: vcm-test-backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://vcm:vcm_pass@postgres:5432/vcm_db
-      REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: test-secret-key-not-for-production
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      LOG_FORMAT: json
+      SECRET_KEY: test-secret-key-not-for-production-use
+      ENCRYPTION_KEY: ""
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: VCM@admin2024!
       ADMIN_EMAIL: admin@test.local
+      DATABASE_URL: postgresql://vcm:vcm_test_pass@postgres:5432/vcm_db
+      REDIS_URL: redis://redis:6379/0
       LDAP_ENABLED: "false"
-      LOG_LEVEL: DEBUG
-      APP_ENV: development
+      ANALYSIS_SCHEDULE_CRON: "0 2 * * *"
+      UPLOAD_PATH: /app/uploads
     ports:
       - "8000:8000"
+    volumes:
+      - vcm_test_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,7 +118,7 @@ services:
 
   # ── VCM Frontend ───────────────────────────────────────
   frontend:
-    image: *frontend-image
+    image: ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:${VCM_VERSION:-1.3.4-beta}
     container_name: vcm-test-frontend
     restart: unless-stopped
     ports:
@@ -118,9 +129,20 @@ services:
     networks:
       - vcm-test-net
 
+# ── Volumes ────────────────────────────────────────────────
 volumes:
   vcm_test_pgdata:
+    name: vcm_test_pgdata
+    driver: local
+  vcm_test_redis:
+    name: vcm_test_redis
+    driver: local
+  vcm_test_uploads:
+    name: vcm_test_uploads
+    driver: local
 
+# ── Networks ───────────────────────────────────────────────
 networks:
   vcm-test-net:
+    name: vcm-test-net
     driver: bridge

@@ -13,33 +13,31 @@
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.26+-326CE5.svg)](https://kubernetes.io)
 [![Docker](https://img.shields.io/badge/Docker-24+-2496ED.svg)](https://docker.com)
 [![CI](https://github.com/DavoudTeimouri/vsphere-compliance-manager/actions/workflows/ci.yml/badge.svg)](https://github.com/DavoudTeimouri/vsphere-compliance-manager/actions)
-[![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](https://github.com/DavoudTeimouri/vsphere-compliance-manager)
 
----
+**Status:** Active development · Current release `1.3.4-beta` (pre-release)
 
-**Automate VMware DRS Anti-Affinity rules and Storage placement compliance across your entire vCenter infrastructure.**
-
-[📖 Documentation](#documentation) · [🚀 Quick Start](#quick-start) · [🐛 Report Bug](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues) · [💡 Request Feature](https://github.com/DavoudTeimouri/vsphere-compliance-manager/issues)
+[🐛 Report Bug](https://github.com/davoudteimouri/vsphere-compliance-manager/issues) · [💡 Request Feature](https://github.com/davoudteimouri/vsphere-compliance-manager/issues)
 
 </div>
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
 - [Architecture](#architecture)
-- [Quick Start](#quick-start)
 - [Docker Images](#docker-images)
+- [Quick Start](#quick-start)
 - [Installation](#installation)
-  - [Docker Compose](#docker-compose)
-  - [Kubernetes](#kubernetes)
-  - [Helm Chart](#helm-chart)
 - [Configuration](#configuration)
+- [Volumes and Data](#volumes-and-data)
+- [Logging](#logging)
+- [Scaling](#scaling)
 - [Authentication](#authentication)
 - [Usage](#usage)
 - [API Reference](#api-reference)
+- [Guides](#guides)
 - [Testing with vcsim](#testing-with-vcsim)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -49,495 +47,635 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
-**vSphere Compliance Manager (VCM)** is a production-grade, containerized platform that continuously monitors and enforces VMware infrastructure compliance policies. It connects to vCenter Server (v6.x and above), analyzes VM placement, DRS rules, and storage distribution — then provides actionable reports, automated remediation, and full audit history.
-
-> Designed for VMware administrators who manage multiple clusters and need consistent enforcement of anti-affinity policies and storage separation rules at scale.
+**vSphere Compliance Manager (VCM)** is a production-grade containerized platform that continuously monitors and enforces VMware infrastructure compliance. It connects to vCenter Server v6.x and above, analyzes VM placement, DRS rules, and storage distribution, then provides actionable reports, automated remediation, and full audit history.
 
 ---
 
-## ✨ Features
+## Features
 
-### 🔌 vCenter Integration
-- Supports **vCenter Server 6.0, 6.5, 6.7, 7.0, 8.0**
-- Multiple vCenter connections managed from one dashboard
-- Secure credential storage with AES-256 encryption
-- Auto-discovery of Clusters, Hosts, VMs, Datastores, and Datastore Clusters
+**vCenter Integration**
+Supports vCenter Server 6.0 through 8.0. Multiple connections managed from one dashboard. Credentials stored with AES-256 encryption. Auto-discovery of Clusters, Hosts, VMs, Datastores, and Datastore Clusters.
 
-### 🧠 DRS Compliance Engine
-- Pattern-based VM grouping using **configurable Regex**
-- Auto-generates Anti-Affinity rules per cluster, per VM group
-- Rule sizing: `VMs per rule = host_count − 1` (ensures spread across all hosts)
-- Skips groups with a single VM (reported, not errored)
-- Deletes stale VCM-managed rules before re-applying
-- Preserves manually created rules (only touches `VCM-AAR-*` prefixed rules)
+**DRS Compliance Engine**
+Regex-based VM grouping. Anti-Affinity rules sized as `host_count − 1` VMs per rule. Stale VCM-managed rules removed before re-applying. Manually created rules never touched. Single-VM groups skipped and reported.
 
-### 🗄️ Storage Compliance Engine
-- Detects VMs in the same group sharing a **Datastore or Datastore Cluster**
-- Checks **all VM disks** (not just primary) — mounted ISOs are excluded
-- Identifies **scattered VMs** with disks spread across multiple datastores
-- Generates consolidation & separation **proposals with feasibility checks**
-- Applies changes only after explicit user approval (never auto-applies storage moves)
+**Storage Compliance Engine**
+Detects VMs sharing a Datastore or Datastore Cluster. All VM disks checked (ISO mounts excluded). Scattered VMs identified. Separation proposals generated with feasibility checks. Changes applied only after explicit approval.
 
-### 👥 Authentication & RBAC
+**RBAC**
+
 | Role | Capabilities |
 |------|-------------|
-| **Admin** | Full access: manage users, vCenter connections, settings, apply changes |
-| **Operator** | Trigger analysis, approve & apply DRS/storage changes, view reports |
-| **Viewer** | Read-only: dashboards, reports, history |
+| Admin | Full access: users, connections, settings, apply changes |
+| Operator | Trigger analysis, approve DRS and storage changes, view reports |
+| Viewer | Read-only: dashboards, reports, history |
 
-- Local username/password with bcrypt hashing
-- **LDAP / Active Directory** integration with group-to-role mapping
-- JWT-based session tokens
-
-### 📊 Reporting & History
-- Full history of every analysis run with timestamps
-- Per-finding tracking: created, actioned, skipped
-- DRS rule create/delete history per cluster
-- Storage move approval workflow with audit trail
-- Export reports to **PDF / CSV / JSON**
-- Scheduled analysis with configurable intervals (cron-based)
-
-### ⚙️ Settings & Configuration
-- All sensitive settings (credentials, tokens) stored **AES-256 encrypted**
-- Configurable VM name patterns (Regex)
-- Configurable DRS role naming template
-- Custom logo upload for white-labeling
-- Analysis schedule (interval or cron expression)
-- LDAP/AD server configuration with test connection
+**Reporting**
+Full analysis history. PDF, CSV, JSON export. Scheduled analysis via cron. Storage move approval workflow with audit trail.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                        Kubernetes Cluster                │
-│  ┌──────────────┐   ┌──────────────┐   ┌─────────────┐ │
-│  │   Frontend   │   │   Backend    │   │  Scheduler  │ │
-│  │   React/TS   │──▶│  FastAPI     │──▶│  APScheduler│ │
-│  │   Nginx      │   │  Python 3.11 │   │             │ │
-│  └──────────────┘   └──────┬───────┘   └─────────────┘ │
-│                            │                             │
-│  ┌─────────────────────────▼────────────────────────┐   │
-│  │                   PostgreSQL                      │   │
-│  │   Users │ Analysis Runs │ Findings │ Audit Logs   │   │
-│  └──────────────────────────────────────────────────┘   │
-│  ┌───────────────────────┐  ┌──────────────────────┐    │
-│  │         Redis         │  │      Persistent      │    │
-│  │   Cache / Sessions    │  │       Storage        │    │
-│  └───────────────────────┘  └──────────────────────┘    │
-└────────────────────────────┬────────────────────────────┘
-                             │  pyVmomi / REST
-                    ┌────────▼─────────┐
-                    │  vCenter Server  │
-                    │   (v6.x – v8.x)  │
-                    └──────────────────┘
+│                    Kubernetes / Docker                   │
+│                                                          │
+│  ┌────────────┐    ┌─────────────┐   ┌───────────────┐  │
+│  │  Frontend  │    │   Backend   │   │    Worker     │  │
+│  │  React 18  │───▶│  FastAPI    │──▶│ APScheduler   │  │
+│  │  Nginx     │    │  Python 3.11│   │               │  │
+│  └────────────┘    └──────┬──────┘   └───────────────┘  │
+│                           │                              │
+│          ┌────────────────┼───────────────┐              │
+│          ▼                ▼               ▼              │
+│  ┌──────────────┐  ┌──────────┐  ┌──────────────┐       │
+│  │  PostgreSQL  │  │  Redis   │  │   Uploads    │       │
+│  │  StatefulSet │  │StatefulSet│  │     PVC      │       │
+│  │  vcm_pgdata  │  │ vcm_redis│  │  vcm_uploads │       │
+│  └──────────────┘  └──────────┘  └──────────────┘       │
+└─────────────────────────────┬───────────────────────────┘
+                              │ pyVmomi / port 443
+                     ┌────────▼─────────┐
+                     │  vCenter Server  │
+                     │   v6.x – v8.x    │
+                     └──────────────────┘
 ```
 
-See [docs/architecture/](docs/architecture/) for detailed diagrams.
+See [docs/architecture/README.md](docs/architecture/README.md) for full diagrams.
 
 ---
 
-## 🚀 Quick Start
+## Docker Images
 
-### Option A — Pre-built Images (Recommended)
+Images are published to GHCR on every tagged release. Images are **never** built on branch pushes.
 
-No build step required. Pull the latest images directly from the GitHub Container Registry:
+| Image | Registry |
+|-------|----------|
+| Backend | `ghcr.io/davoudteimouri/vsphere-compliance-manager/backend` |
+| Frontend | `ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend` |
+
+Available tags: `1.3.4-beta`, `latest`
 
 ```bash
-# Pull images
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:main
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:main
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:1.3.4-beta
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:1.3.4-beta
 ```
 
-Then bring up the full stack using the provided compose file:
+Packages: [github.com/davoudteimouri/vsphere-compliance-manager/pkgs/container](https://github.com/davoudteimouri/vsphere-compliance-manager/pkgs/container/vsphere-compliance-manager%2Fbackend)
+
+---
+
+## Quick Start
+
+**Option A — Pre-built images (recommended)**
 
 ```bash
-# Clone only to get the compose file and .env.example
-git clone https://github.com/DavoudTeimouri/vsphere-compliance-manager.git
+git clone https://github.com/davoudteimouri/vsphere-compliance-manager.git
 cd vsphere-compliance-manager
-
 cp .env.example .env
-# Edit .env with your values
-
-docker compose up -d
+nano .env
+VCM_VERSION=1.3.4-beta docker compose up -d
 ```
 
-The UI will be available at **http://localhost:3000**
-Default admin credentials: `admin / VCM@admin2024!` *(change immediately)*
+UI available at `http://localhost:3000` · Default credentials: `admin / VCM@admin2024!`
 
-**Want to test without a real vCenter?**
-Use the included vcsim test environment — see [docs/vcsim/README.md](docs/vcsim/README.md).
+**Option B — Test without a real vCenter**
 
 ```bash
-# Full test environment: vcsim + VCM stack, no vCenter needed
-docker compose -f docs/vcsim/docker-compose.vcsim.yml up -d
+VCM_VERSION=1.3.4-beta \
+  docker compose -f docs/vcsim/docker-compose.vcsim.yml up -d
+pip install pyVmomi
+python3 docs/vcsim/seed_vcsim.py --seed 42
 ```
 
-### Option B — Build from Source
+**Option C — Build from source**
 
 ```bash
-git clone https://github.com/DavoudTeimouri/vsphere-compliance-manager.git
+git clone https://github.com/davoudteimouri/vsphere-compliance-manager.git
 cd vsphere-compliance-manager
-
 cp .env.example .env
-# Edit .env with your values
-
-docker compose up -d
+nano .env
+docker compose up -d --build
 ```
 
 ---
-## 📦 Installation
+
+## Installation
 
 ### Docker Compose
 
-Suitable for single-node deployments and development.
+```bash
+cp .env.example .env
+VCM_VERSION=1.3.4-beta docker compose up -d
+docker compose logs -f backend
+```
+
+To upgrade:
 
 ```bash
-# Production-like setup
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-# View logs
-docker compose logs -f backend
-
-# Scale workers
-docker compose up -d --scale worker=3
+VCM_VERSION=1.4.0 docker compose pull
+VCM_VERSION=1.4.0 docker compose up -d
 ```
+
+Full guide: [docs/deployment/README.md](docs/deployment/README.md)
 
 ### Kubernetes
 
 ```bash
-# Apply base manifests
-kubectl apply -k k8s/base/
-
-# Check rollout
+kubectl apply -k k8s/overlays/prod/
 kubectl rollout status deployment/vcm-backend -n vcm
-kubectl rollout status deployment/vcm-frontend -n vcm
-
-# Get the service URL
-kubectl get svc vcm-frontend -n vcm
+kubectl get ingress vcm-ingress -n vcm
 ```
 
-### Helm Chart
+Manifest structure:
+
+```
+k8s/
+  base/
+    namespace.yaml          vcm namespace
+    configmap.yaml          ConfigMap and Secret templates
+    postgres.yaml           StatefulSet, headless Service, Secret template
+    redis.yaml              StatefulSet, headless Service
+    volumes/
+      pvc-uploads.yaml      5Gi ReadWriteMany for multi-pod upload access
+      pvc-postgres.yaml     reference — StatefulSet manages its own PVC
+      pvc-redis.yaml        reference — StatefulSet manages its own PVC
+    backend.yaml            Deployment, Service, ServiceAccount, HPA
+    frontend.yaml           Deployment, Service, Ingress
+  overlays/
+    dev/                    1 replica, DEBUG logging
+    staging/                2 replicas, staging hostname
+    prod/                   3 replicas, production hostname, StorageClass overrides
+```
+
+To upgrade:
 
 ```bash
-# Install directly from the local chart directory
-helm install vcm ./deploy/helm \
-  --namespace vcm --create-namespace \
-  --values deploy/helm/values.yaml \
-  --set secrets.secretKey="your-secret-key" \
-  --set vcenter.defaultHost="vcenter.example.com"
+nano k8s/overlays/prod/kustomization.yaml
+kubectl apply -k k8s/overlays/prod/
+kubectl rollout status deployment/vcm-backend -n vcm
 ```
 
-See [`deploy/helm/values.yaml`](deploy/helm/values.yaml) for all configurable options.
+### Helm
+
+```bash
+helm install vcm ./deploy/helm \
+  --namespace vcm \
+  --create-namespace \
+  --set app.version="1.3.4-beta" \
+  --set app.secretKey="$(openssl rand -base64 32)" \
+  --set app.adminPassword="YourPassword@123" \
+  --set ingress.host="vcm.your-domain.com"
+```
+
+To upgrade:
+
+```bash
+helm upgrade vcm ./deploy/helm --reuse-values --set app.version="1.4.0"
+```
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-Copy `.env.example` to `.env` and fill in the values:
+Copy `.env.example` to `.env` and set these minimum required values:
 
-```dotenv
-# ── Application ──────────────────────────────────────────
-SECRET_KEY=change-me-to-a-long-random-string-in-production
-ENCRYPTION_KEY=                         # Auto-generated if empty
-ACCESS_TOKEN_EXPIRE_MINUTES=480
-
-# ── Database ─────────────────────────────────────────────
+```
+SECRET_KEY=<random 32+ char string — run: openssl rand -base64 32>
+ADMIN_PASSWORD=<strong password>
 DATABASE_URL=postgresql://vcm:vcm_pass@postgres:5432/vcm_db
-
-# ── Redis ────────────────────────────────────────────────
 REDIS_URL=redis://redis:6379/0
+```
 
-# ── Initial Admin User ───────────────────────────────────
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=VCM@admin2024!
-ADMIN_EMAIL=admin@example.com
+LDAP / Active Directory:
 
-# ── LDAP / Active Directory (optional) ───────────────────
-LDAP_ENABLED=false
+```
+LDAP_ENABLED=true
 LDAP_SERVER_URL=ldap://dc.example.com:389
 LDAP_BASE_DN=DC=example,DC=com
-LDAP_BIND_DN=CN=svc-vcm,OU=Service Accounts,DC=example,DC=com
-LDAP_BIND_PASSWORD=
-LDAP_USER_FILTER=(sAMAccountName={username})
+LDAP_BIND_DN=CN=svc-vcm,OU=ServiceAccounts,DC=example,DC=com
+LDAP_BIND_PASSWORD=<service account password>
 LDAP_GROUP_ADMIN=CN=vcm-admins,OU=Groups,DC=example,DC=com
 LDAP_GROUP_OPERATOR=CN=vcm-operators,OU=Groups,DC=example,DC=com
-LDAP_USE_SSL=false
-
-# ── Analysis Defaults ────────────────────────────────────
-ANALYSIS_SCHEDULE_CRON=0 2 * * *        # Daily at 02:00
-ANALYSIS_TIMEOUT_SECONDS=3600
 ```
 
-All sensitive values in the database are additionally encrypted with the `ENCRYPTION_KEY`.
+Full reference: [`.env.example`](.env.example)
 
 ---
 
-## 🔐 Authentication
+## Volumes and Data
 
-### Local Authentication
-Users are created via the Admin panel or seeded at startup. Passwords are hashed with **bcrypt** (cost factor 12).
+VCM uses three isolated persistent storage volumes.
 
-### LDAP / Active Directory
-Set `LDAP_ENABLED=true` and configure the LDAP settings. On first login, LDAP users are auto-provisioned in the local database with the role mapped from their group membership:
+| Volume | Purpose | Access Mode | Recommended Size |
+|--------|---------|-------------|-----------------|
+| `vcm_pgdata` | PostgreSQL: users, analysis history, findings, audit log | ReadWriteOnce | 20 GB+ |
+| `vcm_redis` | Redis: session cache, task queue | ReadWriteOnce | 2 GB |
+| `vcm_uploads` | Logo files, exported reports | ReadWriteMany (K8s) | 5 GB+ |
 
-```
-LDAP group: vcm-admins   → Role: Admin
-LDAP group: vcm-operators → Role: Operator
-(no matching group)       → Role: Viewer
-```
+**Docker Compose — volume management**
 
-Use the **Settings → Authentication** page to test the LDAP connection and validate group mappings before enabling.
-
----
-
-## 📖 Usage
-
-### 1. Add a vCenter Connection
-Navigate to **Settings → vCenter Connections** → click **Add Connection**. Provide the hostname, port, and credentials. Use **Test Connection** to verify before saving.
-
-### 2. Configure Patterns
-Go to **Settings → Patterns**. Add Regex patterns to identify VM groups:
-
-| Pattern Type | Example Regex | Matches |
-|---|---|---|
-| VM Name | `^(WEB)-\d+` | WEB-01, WEB-02, ... |
-| VM Name | `^([A-Z]+-[A-Z]+)-` | APP-PROD-01, DB-PROD-02 |
-| Datastore | `^DS-(PROD\|DR)-` | DS-PROD-01, DS-DR-01 |
-
-### 3. Run Analysis
-Go to **Analysis** → select your vCenter → click **Run Analysis**. The engine will:
-1. Collect full inventory (Clusters, VMs, Datastores)
-2. Group VMs by your configured patterns
-3. Evaluate DRS and Storage compliance
-4. Generate findings and proposals
-
-### 4. Review & Apply
-- **DRS Rules**: Review proposed rules → click **Apply DRS Changes** (Operator/Admin only)
-- **Storage**: Review proposals → click **Approve** on individual moves → the system will track each move
-- All actions are logged in the **Audit Log**
-
----
-
-## 📡 API Reference
-
-The REST API is documented with Swagger UI:
-- **Development**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-Key endpoints:
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/login` | Authenticate, get JWT token |
-| `GET` | `/api/vcenter/` | List vCenter connections |
-| `POST` | `/api/analysis/run` | Trigger a new analysis |
-| `GET` | `/api/analysis/{id}/findings` | Get findings for an analysis run |
-| `POST` | `/api/analysis/{id}/apply-drs` | Apply DRS rule changes |
-| `GET` | `/api/reports/` | List historical reports |
-| `GET` | `/api/reports/{id}/export` | Export report (PDF/CSV/JSON) |
-| `GET` | `/api/dashboard/summary` | Get dashboard KPIs |
-
-Full API docs: [docs/api/README.md](docs/api/README.md)
-
----
-
-## 🐳 Docker Images
-
-Pre-built images are published to the GitHub Container Registry on every push to `main`
-and on every tagged release.
-
-| Image | Tags |
-|-------|------|
-| `ghcr.io/davoudteimouri/vsphere-compliance-manager/backend` | `main`, `latest`, `1.x.x` |
-| `ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend` | `main`, `latest`, `1.x.x` |
+List volumes:
 
 ```bash
-# Latest development build (main branch)
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:main
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:main
-
-# Specific stable release (once v1.0.0 is published)
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:1.0.0
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:1.0.0
+docker volume ls
+docker volume inspect vcm_pgdata
 ```
 
-All images are available at:
-**[github.com/DavoudTeimouri/vsphere-compliance-manager/pkgs/container](https://github.com/DavoudTeimouri/vsphere-compliance-manager/pkgs/container/vsphere-compliance-manager%2Fbackend)**
+Backup PostgreSQL:
+
+```bash
+docker exec vcm-backend-1 pg_dump -U vcm vcm_db > backup-$(date +%Y%m%d).sql
+```
+
+Restore PostgreSQL:
+
+```bash
+cat backup-20260619.sql | docker exec -i vcm-postgres-1 psql -U vcm vcm_db
+```
+
+Full reset (all data deleted):
+
+```bash
+docker compose down -v
+VCM_VERSION=1.3.4-beta docker compose up -d
+```
+
+**Kubernetes — volume management**
+
+PostgreSQL and Redis use StatefulSet `volumeClaimTemplates` — Kubernetes provisions their PVCs automatically. The uploads PVC requires `ReadWriteMany`.
+
+List PVCs:
+
+```bash
+kubectl get pvc -n vcm
+```
+
+Expected output:
+
+```
+NAME                           CAPACITY   ACCESS MODES
+postgres-data-vcm-postgres-0   20Gi       RWO
+redis-data-vcm-redis-0         2Gi        RWO
+vcm-uploads                    5Gi        RWX
+```
+
+Backup from Kubernetes:
+
+```bash
+kubectl exec -n vcm statefulset/vcm-postgres -- \
+  pg_dump -U vcm vcm_db > backup-$(date +%Y%m%d).sql
+```
+
+Restore to Kubernetes:
+
+```bash
+kubectl exec -n vcm -i statefulset/vcm-postgres -- \
+  psql -U vcm vcm_db < backup-20260619.sql
+```
+
+Resize uploads PVC:
+
+```bash
+kubectl patch pvc vcm-uploads -n vcm \
+  -p '{"spec":{"resources":{"requests":{"storage":"20Gi"}}}}'
+```
 
 ---
 
-## 🧪 Testing with vcsim
+## Logging
 
-VCM includes a complete test environment based on
-[vcsim](https://github.com/vmware/govmomi/tree/main/vcsim) — the official VMware
-vCenter simulator. It requires no real vCenter license and covers all VCM features.
+All backend logs are structured JSON in production.
+
+**Log levels**
+
+Set `LOG_LEVEL` in `.env` or Kubernetes ConfigMap:
+
+| Level | When to use |
+|-------|-------------|
+| `DEBUG` | Development and troubleshooting |
+| `INFO` | Production default |
+| `WARNING` | High-traffic, reduce verbosity |
+| `ERROR` | Minimal logging only |
+
+**Docker Compose**
 
 ```bash
-# Start full test stack using pre-built GHCR images
-docker compose -f docs/vcsim/docker-compose.vcsim.yml up -d
+docker compose logs -f backend
+docker compose logs backend --since 1h
+docker compose logs backend 2>&1 | python3 -m json.tool
+```
 
-# Seed vcsim with realistic randomized VM names
+**Kubernetes**
+
+Follow logs:
+
+```bash
+kubectl logs -n vcm deployment/vcm-backend -f
+```
+
+Last hour only:
+
+```bash
+kubectl logs -n vcm deployment/vcm-backend --since=1h
+```
+
+All backend pods simultaneously:
+
+```bash
+kubectl logs -n vcm -l app=vcm-backend -f --max-log-requests=6
+```
+
+Filter errors:
+
+```bash
+kubectl logs -n vcm deployment/vcm-backend | grep '"level":"ERROR"'
+```
+
+**Log format (JSON)**
+
+```json
+{
+  "timestamp": "2026-06-19T10:23:45.123Z",
+  "level": "INFO",
+  "logger": "vcm.main",
+  "message": "HTTP",
+  "method": "POST",
+  "path": "/api/analysis/run",
+  "status": 202,
+  "duration_ms": 12.4
+}
+```
+
+**Log aggregation**
+
+Add these labels to your pods for Promtail / Loki:
+
+```yaml
+annotations:
+  promtail.io/scrape: "true"
+  promtail.io/job: "vcm-backend"
+```
+
+---
+
+## Scaling
+
+**Docker Compose**
+
+```bash
+VCM_VERSION=1.3.4-beta docker compose up -d --scale backend=3
+```
+
+Note: multiple backend replicas require the uploads volume to be on shared storage.
+
+**Kubernetes — manual**
+
+```bash
+kubectl scale deployment vcm-backend -n vcm --replicas=5
+kubectl scale deployment vcm-frontend -n vcm --replicas=3
+```
+
+**Kubernetes — HPA**
+
+The backend includes an HPA by default:
+
+```
+minReplicas: 2  maxReplicas: 6
+CPU target: 70%  Memory target: 80%
+```
+
+Monitor HPA:
+
+```bash
+kubectl get hpa -n vcm
+kubectl describe hpa vcm-backend -n vcm
+```
+
+**Kubernetes — resource tuning**
+
+Override limits in the prod overlay:
+
+```yaml
+patches:
+  - target:
+      kind: Deployment
+      name: vcm-backend
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "2000m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "2Gi"
+```
+
+---
+
+## Authentication
+
+**Local users**
+
+Created via Admin panel. Passwords hashed with bcrypt cost 12.
+
+If login fails, reset from inside the container:
+
+```bash
+docker exec vcm-backend-1 python scripts/reset_admin.py
+docker exec vcm-backend-1 python scripts/reset_admin.py --password "NewPass@123"
+```
+
+Kubernetes:
+
+```bash
+kubectl exec -n vcm deployment/vcm-backend -- \
+  python scripts/reset_admin.py --password "NewPass@123"
+```
+
+**LDAP / Active Directory**
+
+Set `LDAP_ENABLED=true`. On first login, LDAP users are auto-provisioned:
+
+```
+vcm-admins    group → Admin role
+vcm-operators group → Operator role
+(no match)         → Viewer role
+```
+
+Test LDAP before enabling:
+
+```bash
+curl -s -X POST http://localhost:8000/api/settings/ldap/test \
+  -H "Authorization: Bearer <admin-token>"
+```
+
+---
+
+## Usage
+
+**Step 1 — Add a vCenter connection**
+
+Settings → vCenter Connections → Add Connection → Test Connection → Save.
+
+**Step 2 — Configure patterns**
+
+Settings → Patterns. Examples:
+
+| Type | Regex | Matches |
+|------|-------|---------|
+| VM Name | `^(WEB)-` | WEB-01, WEB-02 |
+| VM Name | `^(DB)-(PROD\|DR)-` | DB-PROD-01, DB-DR-02 |
+| Datastore | `^(DS-PROD)-` | DS-PROD-01 |
+
+**Step 3 — Run analysis**
+
+Analysis → select vCenter → Run Analysis.
+
+**Step 4 — Review and apply**
+
+Review findings. Approve DRS changes (Operator/Admin). Approve storage proposals individually.
+
+---
+
+## API Reference
+
+Interactive docs: `http://localhost:8000/docs` (Swagger) · `http://localhost:8000/redoc`
+
+| Method | Endpoint | Role | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/login` | Public | Authenticate, returns JWT |
+| GET | `/api/vcenter/` | Any | List vCenter connections |
+| POST | `/api/vcenter/{id}/test` | Admin | Test vCenter connectivity |
+| POST | `/api/analysis/run` | Operator+ | Trigger analysis |
+| GET | `/api/analysis/{id}/findings` | Any | Get findings |
+| POST | `/api/analysis/{id}/apply-drs` | Operator+ | Apply DRS changes |
+| GET | `/api/reports/{id}/export` | Any | Export report (PDF/CSV/JSON) |
+| GET | `/api/dashboard/summary` | Any | Dashboard KPIs |
+| POST | `/api/settings/patterns` | Admin | Create pattern |
+| POST | `/api/settings/ldap/test` | Admin | Test LDAP connection |
+
+Full reference: [docs/api/README.md](docs/api/README.md)
+
+---
+
+## Guides
+
+| Guide | Description |
+|-------|-------------|
+| [Deployment Guide](docs/deployment/README.md) | Docker Compose, Kubernetes, Helm, volumes, backup, scaling, production checklist |
+| [vcsim Testing Guide](docs/vcsim/README.md) | Test without a real vCenter using the official VMware simulator |
+| [Testing Guide](docs/testing/README.md) | Unit tests, integration tests, randomized vcsim fixtures |
+| [API Reference](docs/api/README.md) | All endpoints, request/response formats, authentication |
+| [Architecture Guide](docs/architecture/README.md) | System design, data flow, security model, DRS and storage logic |
+
+---
+
+## Testing with vcsim
+
+VCM includes a complete test environment based on vcsim — the official VMware vCenter simulator. No real vCenter required.
+
+```bash
+VCM_VERSION=1.3.4-beta \
+  docker compose -f docs/vcsim/docker-compose.vcsim.yml up -d
+
 pip install pyVmomi
 python3 docs/vcsim/seed_vcsim.py --seed 42
-
-# Use a different seed each run to cover more scenarios
-python3 docs/vcsim/seed_vcsim.py
+python3 docs/vcsim/seed_vcsim.py --seed 100 --prefixes WEB APP DB CACHE
 ```
 
-See the [vcsim Testing Guide](docs/vcsim/README.md) for full setup instructions,
-test scenarios, and API examples.
+See [docs/vcsim/README.md](docs/vcsim/README.md) for full setup, test scenarios, and API examples.
 
 ---
 
-## 🛠️ Development
+## Development
 
-### Requirements
-- Python 3.11+
-- Node.js 20+
-- Docker & Docker Compose
-- PostgreSQL 15 (or use Docker)
+**Requirements:** Python 3.11+, Node.js 22+, Docker Compose v2
 
-### Backend Setup
+**Backend**
 
 ```bash
 cd backend
-
-# Create virtualenv
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
-
-# Start dependencies
+source .venv/bin/activate
+pip install -r requirements.txt -r requirements-dev.txt
 docker compose up postgres redis -d
-
-# Run database migrations
 alembic upgrade head
-
-# Seed initial data
-python scripts/seed.py
-
-# Start dev server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend Setup
+**Frontend**
 
 ```bash
 cd frontend
-
 npm install
-npm run dev          # Starts on http://localhost:3000
+npm run dev
 ```
 
-### Running Tests
+**Tests**
 
 ```bash
-# Backend unit tests (no external dependencies)
 cd backend
 pytest tests/unit/ -v --cov=app
-
-# Backend integration tests (requires PostgreSQL + Redis)
 pytest tests/integration/ -v
-
-# Frontend tests
-cd frontend
-npm test
+cd ../frontend && npm test
 ```
 
-> **No vCenter?** Use the included vcsim test environment to test all VCM features
-> against a simulated vCenter — see [docs/vcsim/README.md](docs/vcsim/README.md).
-
-### Code Quality
+**Code quality**
 
 ```bash
-# Backend
-ruff check .
-mypy app/
-black .
-
-# Frontend
-npm run lint
-npm run type-check
+cd backend && ruff check . && black . && mypy app/ --ignore-missing-imports
+cd frontend && npm run lint && npm run type-check
 ```
 
-### Database Migrations
+**Migrations**
 
 ```bash
-# Create a new migration
-alembic revision --autogenerate -m "description of change"
-
-# Apply migrations
+alembic revision --autogenerate -m "add table"
 alembic upgrade head
-
-# Rollback one step
 alembic downgrade -1
 ```
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting a PR.
-
-### Development Workflow
-
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feat/my-feature`
-3. **Commit** using [Conventional Commits](https://www.conventionalcommits.org/): `feat: add LDAP group sync`
-4. **Push** and open a **Pull Request** against `develop`
-
-### Branch Strategy
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 | Branch | Purpose |
 |--------|---------|
-| `main` | Production-ready, tagged releases |
-| `develop` | Integration branch for features |
+| `main` | Tagged releases only |
+| `develop` | Integration |
 | `feat/*` | New features |
 | `fix/*` | Bug fixes |
-| `hotfix/*` | Critical production fixes |
-| `release/*` | Release preparation |
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
+| `hotfix/*` | Critical fixes |
 
 ---
 
-## 🔒 Security
+## Security
 
-- All secrets are stored encrypted (AES-256 via Fernet)
-- Passwords hashed with bcrypt (cost 12)
-- JWT tokens with configurable expiry
-- HTTPS enforced in production (configure TLS in Ingress)
-- Role-based access control on all mutation endpoints
-- Full audit log of all user actions and system changes
-- No credentials are ever logged
+Credentials encrypted with AES-256. Passwords hashed with bcrypt cost 12. JWT tokens with configurable expiry. TLS enforced via Ingress. Full audit log.
 
-To report a security vulnerability, please see [SECURITY.md](SECURITY.md). **Do not open a public issue.**
+To report a vulnerability: [Security Advisory](https://github.com/davoudteimouri/vsphere-compliance-manager/security/advisories/new)
 
 ---
 
-## 📄 Changelog
+## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for the full release history.
+See [CHANGELOG.md](CHANGELOG.md).
 
----
-
-## 📜 License
-
-This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
+Current: `1.3.4-beta` · [Releases](https://github.com/davoudteimouri/vsphere-compliance-manager/releases)
 
 ---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 <div align="center">
 
-Made with ❤️ for VMware administrators everywhere
-
-[⬆ Back to top](#vsphere-compliance-manager)
+[Back to top](#vsphere-compliance-manager)
 
 </div>

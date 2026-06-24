@@ -1,12 +1,29 @@
 version: "3.9"
 
-# Development overrides — use with:
-#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Development overrides
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+name: vcm-dev
 
 services:
 
+  postgres:
+    container_name: vcm-dev-postgres
+    environment:
+      POSTGRES_PASSWORD: vcm_dev_pass
+    ports:
+      - "5432:5432"
+
+  redis:
+    container_name: vcm-dev-redis
+    ports:
+      - "6379:6379"
+
   backend:
+    container_name: vcm-dev-backend
     build:
+      context: ./backend
       target: development
     command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
     volumes:
@@ -14,9 +31,17 @@ services:
     environment:
       APP_ENV: development
       LOG_LEVEL: DEBUG
+      LOG_FORMAT: json
+      DATABASE_URL: postgresql://vcm:vcm_dev_pass@postgres:5432/vcm_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-not-for-production
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: VCM@admin2024!
 
   frontend:
+    container_name: vcm-dev-frontend
     build:
+      context: ./frontend
       target: development
     command: npm run dev -- --host
     volumes:
@@ -27,9 +52,9 @@ services:
     environment:
       VITE_API_BASE_URL: http://localhost:8000
 
-  # pgAdmin for DB inspection during development
   pgadmin:
     image: dpage/pgadmin4:latest
+    container_name: vcm-dev-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@local.dev
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -38,9 +63,9 @@ services:
     networks:
       - vcm_net
 
-  # Redis Insight
   redisinsight:
     image: redislabs/redisinsight:latest
+    container_name: vcm-dev-redisinsight
     ports:
       - "8001:8001"
     networks:

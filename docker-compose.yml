@@ -1,32 +1,47 @@
 version: "3.9"
 
+# VCM Production Docker Compose
+# Set VCM_VERSION to pin a specific release:
+#   VCM_VERSION=1.3.4-beta docker compose up -d
+
 name: vcm
 
 services:
 
+  # ── PostgreSQL ─────────────────────────────────────────
   postgres:
     image: postgres:15-alpine
+    container_name: vcm-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: vcm
-      POSTGRES_PASSWORD: vcm_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vcm_change_me}
       POSTGRES_DB: vcm_db
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - vcm_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vcm -d vcm_db"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - vcm_net
 
+  # ── Redis ──────────────────────────────────────────────
   redis:
     image: redis:7-alpine
+    container_name: vcm-redis
     restart: unless-stopped
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
     volumes:
-      - redis_data:/data
+      - vcm_redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -35,19 +50,19 @@ services:
     networks:
       - vcm_net
 
+  # ── Backend ────────────────────────────────────────────
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:${VCM_VERSION:-1.3.4-beta}
+    container_name: vcm-backend
     restart: unless-stopped
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://vcm:vcm_pass@postgres:5432/vcm_db
+      DATABASE_URL: postgresql://vcm:${POSTGRES_PASSWORD:-vcm_change_me}@postgres:5432/vcm_db
       REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     volumes:
-      - uploads_data:/app/uploads
+      - vcm_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,45 +77,33 @@ services:
     networks:
       - vcm_net
 
-  worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    command: python -m app.worker
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql://vcm:vcm_pass@postgres:5432/vcm_db
-      REDIS_URL: redis://redis:6379/0
-    volumes:
-      - uploads_data:/app/uploads
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - vcm_net
-
+  # ── Frontend ───────────────────────────────────────────
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: http://localhost:8000
+    image: ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:${VCM_VERSION:-1.3.4-beta}
+    container_name: vcm-frontend
     restart: unless-stopped
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - vcm_net
 
+# ── Volumes ────────────────────────────────────────────────
 volumes:
-  postgres_data:
-  redis_data:
-  uploads_data:
+  vcm_pgdata:
+    name: vcm_pgdata
+    driver: local
+  vcm_redis:
+    name: vcm_redis
+    driver: local
+  vcm_uploads:
+    name: vcm_uploads
+    driver: local
 
+# ── Networks ───────────────────────────────────────────────
 networks:
   vcm_net:
+    name: vcm_net
     driver: bridge

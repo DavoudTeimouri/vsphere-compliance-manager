@@ -41,6 +41,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}/backend
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=VCM Backend — vSphere Compliance Manager
+            org.opencontainers.image.licenses=MIT
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -63,6 +67,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}/frontend
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=VCM Frontend — vSphere Compliance Manager
+            org.opencontainers.image.licenses=MIT
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
