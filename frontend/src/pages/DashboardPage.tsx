@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Activity, AlertTriangle, CheckCircle, Server, Database, Clock } from 'lucide-react'
+import { Activity, AlertTriangle, Server, Database, Clock } from 'lucide-react'
 import api from '../utils/api'
-import { useAuthStore } from '../store/authStore'
 
 interface DashboardSummary {
   total_vcenters: number
