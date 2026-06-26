@@ -24,12 +24,14 @@ def create_enums() -> None:
     with engine.connect() as conn:
         for name, values in enums:
             # Check if type already exists (safe across all PostgreSQL versions)
-            result = conn.execute(text(
+            exists = conn.execute(text(
                 f"SELECT 1 FROM pg_type WHERE typname = '{name}'"
-            ))
-            if not result.fetchone():
+            )).scalar()
+            if not exists:
                 vals = ", ".join(f"'{v}'" for v in values)
-                conn.execute(text(f"CREATE TYPE {name} AS ENUM ({vals})"))
+                conn.execute(text(
+                    f"CREATE TYPE {name} AS ENUM ({vals})"
+                ))
         conn.commit()
 
 
