@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 from app.main import app
-from app.core.database import Base, get_db
+from app.core.database import Base, get_db, create_enums
 from app.core.security import get_password_hash
 from app.models.models import User, UserRole
 
@@ -18,6 +18,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db():
+    create_enums()
     Base.metadata.create_all(bind=engine)
     yield
     Base.metadata.drop_all(bind=engine)
