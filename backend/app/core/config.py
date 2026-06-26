@@ -7,11 +7,11 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
-    DATABASE_URL: str = "postgresql://vcm:vcm_pass@localhost:5432/vcm_db"
+    DATABASE_URL: str = "postgresql://vcm:***@localhost:5432/vcm_db"
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
 
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = "redis://localhost:***@admin2024!"
 
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD: str = "VCM@admin2024!"

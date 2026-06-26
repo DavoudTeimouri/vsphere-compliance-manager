@@ -8,7 +8,7 @@
 | [Kubernetes + Kustomize](#kubernetes) | Production, HA, scaling | Medium |
 | [Helm](#helm-chart) | Kubernetes with package management | Medium |
 
-**Current release:** `1.3.3-beta`
+**Current release:** `1.3.6-beta`
 
 ---
 
@@ -38,7 +38,7 @@ cp .env.example .env
 nano .env
 
 # Start all services
-VCM_VERSION=1.3.3-beta docker compose up -d
+VCM_VERSION=1.3.6-beta docker compose up -d
 
 # Check status
 docker compose ps
@@ -167,7 +167,7 @@ Azure Files).
 ```bash
 # Edit the image tag in prod overlay
 nano k8s/overlays/prod/kustomization.yaml
-# Change: newTag: "1.3.3-beta" -> newTag: "1.4.0"
+# Change: newTag: "1.3.6-beta" -> newTag: "1.4.0"
 
 # Apply — Kubernetes performs a rolling update
 kubectl apply -k k8s/overlays/prod/
@@ -199,7 +199,7 @@ The Helm chart uses the same images and configuration as the Kustomize manifests
 helm install vcm ./deploy/helm \
   --namespace vcm \
   --create-namespace \
-  --set app.version="1.3.3-beta" \
+  --set app.version="1.3.6-beta" \
   --set app.secretKey="$(openssl rand -base64 32)" \
   --set app.adminPassword="YourSecurePassword@123" \
   --set ingress.host="vcm.your-domain.com" \

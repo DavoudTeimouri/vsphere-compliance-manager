@@ -1,4 +1,3 @@
-
 # Development overrides
 # Usage:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
@@ -10,7 +9,7 @@ services:
   postgres:
     container_name: vcm-dev-postgres
     environment:
-      POSTGRES_PASSWORD: vcm_dev_pass
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vcm_dev_pass}
     ports:
       - "5432:5432"
 
@@ -31,11 +30,16 @@ services:
       APP_ENV: development
       LOG_LEVEL: DEBUG
       LOG_FORMAT: json
-      DATABASE_URL: postgresql://vcm:vcm_dev_pass@postgres:5432/vcm_db
+      DATABASE_URL: postgresql://vcm:***@postgres:5432/vcm_db
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: dev-secret-key-not-for-production
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: VCM@admin2024!
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-not-for-production}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-VCM@admin2024!}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
 
   frontend:
     container_name: vcm-dev-frontend
@@ -56,7 +60,7 @@ services:
     container_name: vcm-dev-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@local.dev
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
       - "5050:80"
     networks:

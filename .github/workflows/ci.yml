@@ -60,23 +60,23 @@ jobs:
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - name: Run migrations
         env:
-          DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
+          DATABASE_URL: postgresql://vcm:***@localhost:5432/vcm_test
           SECRET_KEY: ci-test-secret-key-32chars-padding
-          REDIS_URL: redis://localhost:6379/0
+          REDIS_URL: redis://localhost:***@v4
           LDAP_ENABLED: "false"
         run: alembic upgrade head
       - name: Unit tests
         env:
-          DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
+          DATABASE_URL: postgresql://vcm:***@localhost:5432/vcm_test
           SECRET_KEY: ci-test-secret-key-32chars-padding
-          REDIS_URL: redis://localhost:6379/0
+          REDIS_URL: redis://localhost:***@v4
           LDAP_ENABLED: "false"
         run: pytest tests/unit/ -v --cov=app --cov-report=xml --cov-report=term-missing
       - name: Integration tests
         env:
-          DATABASE_URL: postgresql://vcm:vcm_pass@localhost:5432/vcm_test
+          DATABASE_URL: postgresql://vcm:***@localhost:5432/vcm_test
           SECRET_KEY: ci-test-secret-key-32chars-padding
-          REDIS_URL: redis://localhost:6379/0
+          REDIS_URL: redis://localhost:***@v4
           LDAP_ENABLED: "false"
         run: pytest tests/integration/ -v --cov=app --cov-append --cov-report=xml
 

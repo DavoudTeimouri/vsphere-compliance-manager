@@ -1,0 +1,66 @@
+# VCM Helm Values
+# Override these during install/upgrade.
+
+app:
+  version: "1.3.6-beta"
+  secretKey: ""
+  encryptionKey: ""
+  adminUsername: "admin"
+  adminPassword: ""
+  adminEmail: "admin@example.com"
+
+image:
+  registry: ghcr.io/davoudteimouri/vsphere-compliance-manager
+  pullPolicy: IfNotPresent
+
+backend:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 8000
+
+frontend:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  service:
+    type: ClusterIP
+    port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  host: vcm.example.com
+  tls:
+    enabled: false
+    secretName: vcm-tls-secret
+
+postgres:
+  enabled: true
+  image: postgres:15-alpine
+  storage: 20Gi
+  storageClass: standard
+  secretName: vcm-postgres-secret
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  storage: 2Gi
+  storageClass: standard
+
+uploads:
+  enabled: true
+  storage: 5Gi
+  storageClass: nfs-client
