@@ -1,6 +1,6 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Trash2, PlayCircle, Loader2, CheckCircle, XCircle, RefreshCw, Server } from 'lucide-react'
+import { Plus, Trash2, PlayCircle, Loader2, RefreshCw, Server } from 'lucide-react'
 import api from '../utils/api'
 import { useAuthStore } from '../store/authStore'
 

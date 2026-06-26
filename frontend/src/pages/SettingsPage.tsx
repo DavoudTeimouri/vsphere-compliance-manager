@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Settings as SettingsIcon, Plus, Trash2, Loader2, TestTube, Upload } from 'lucide-react'
+import { Settings as SettingsIcon, Plus, Trash2, Loader2, TestTube } from 'lucide-react'
 import api from '../utils/api'
 import { useAuthStore } from '../store/authStore'
 
