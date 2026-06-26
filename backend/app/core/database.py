@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
@@ -34,9 +34,12 @@ def create_enums() -> None:
 
 
 def init_db() -> None:
-    """Create enum types then all tables (idempotent). Safe to call on every startup."""
+    """Create enum types then all tables. Fully idempotent — safe every startup."""
     create_enums()
-    Base.metadata.create_all(bind=engine, checkfirst=True)
+    # Only create tables if they don't already exist (avoids duplicate type errors)
+    inspector = inspect(engine)
+    if not inspector.table_names():
+        Base.metadata.create_all(bind=engine)
 
 
 def get_db():
