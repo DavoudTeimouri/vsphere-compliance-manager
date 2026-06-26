@@ -32,6 +32,6 @@ patches:
 
 images:
   - name: ghcr.io/davoudteimouri/vsphere-compliance-manager/backend
-    newTag: "1.3.6-beta"
+    newTag: "latest"
   - name: ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend
-    newTag: "1.3.6-beta"
+    newTag: "latest"

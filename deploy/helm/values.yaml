@@ -2,7 +2,7 @@
 # Override these during install/upgrade.
 
 app:
-  version: "1.3.6-beta"
+  version: "latest"
   secretKey: ""
   encryptionKey: ""
   adminUsername: "admin"

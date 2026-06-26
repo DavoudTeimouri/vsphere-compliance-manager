@@ -326,8 +326,8 @@ To pull and run them manually:
 
 ```bash
 # Pull images
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:1.3.6-beta
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:1.3.6-beta
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:latest
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:latest
 
 # Or a specific version (once stable releases are tagged)
 docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:1.0.0
@@ -337,7 +337,7 @@ docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:1.0.0
 To override the image tag in the test compose:
 
 ```bash
-VCM_VERSION=1.3.6-beta docker compose -f docker-compose.vcsim.yml up -d
+VCM_VERSION=latest docker compose -f docker-compose.vcsim.yml up -d
 ```
 
 ---

@@ -8,7 +8,9 @@
 | [Kubernetes + Kustomize](#kubernetes) | Production, HA, scaling | Medium |
 | [Helm](#helm-chart) | Kubernetes with package management | Medium |
 
-**Current release:** `1.3.6-beta`
+**Current release:** `latest` (or pin to a specific version tag)
+
+> Replace `$VCM_VERSION` with a specific tag (e.g. `1.3.8-beta`) to pin a release. Omit it to use `latest`.
 
 ---
 
@@ -38,7 +40,7 @@ cp .env.example .env
 nano .env
 
 # Start all services
-VCM_VERSION=1.3.6-beta docker compose up -d
+VCM_VERSION=latest docker compose up -d
 
 # Check status
 docker compose ps
@@ -199,7 +201,7 @@ The Helm chart uses the same images and configuration as the Kustomize manifests
 helm install vcm ./deploy/helm \
   --namespace vcm \
   --create-namespace \
-  --set app.version="1.3.6-beta" \
+  --set app.version="latest" \
   --set app.secretKey="$(openssl rand -base64 32)" \
   --set app.adminPassword="YourSecurePassword@123" \
   --set ingress.host="vcm.your-domain.com" \

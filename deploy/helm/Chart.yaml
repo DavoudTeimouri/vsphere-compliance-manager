@@ -2,8 +2,8 @@ apiVersion: v2
 name: vsphere-compliance-manager
 description: Enterprise VMware vCenter DRS & Storage Compliance Platform
 type: application
-version: 1.3.6-beta
-appVersion: 1.3.6-beta
+version: latest
+appVersion: latest
 home: https://github.com/davoudteimouri/vsphere-compliance-manager
 sources:
   - https://github.com/davoudteimouri/vsphere-compliance-manager

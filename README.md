@@ -16,6 +16,8 @@
 
 **Status:** Active development · Current release `1.3.8-beta` (pre-release)
 
+> **Pin a release:** Replace `latest` with a specific tag (e.g. `1.3.8-beta`) in all commands below.
+
 [🐛 Report Bug](https://github.com/davoudteimouri/vsphere-compliance-manager/issues) · [💡 Request Feature](https://github.com/davoudteimouri/vsphere-compliance-manager/issues)
 
 </div>
@@ -46,7 +48,7 @@ git clone https://github.com/davoudteimouri/vsphere-compliance-manager.git
 cd vsphere-compliance-manager
 cp .env.example .env
 # Edit .env — set SECRET_KEY and ADMIN_PASSWORD at minimum
-VCM_VERSION=1.3.8-beta docker compose up -d
+VCM_VERSION=latest docker compose up -d
 ```
 
 UI: `http://localhost:3000` · Default: `admin / VCM@admin2024!` · API docs: `http://localhost:8000/docs`
@@ -54,11 +56,10 @@ UI: `http://localhost:3000` · Default: `admin / VCM@admin2024!` · API docs: `h
 ### Test without a real vCenter
 
 ```bash
-VCM_VERSION=1.3.8-beta docker compose -f docs/vcsim/docker-compose.vcsim.yml up -d
+VCM_VERSION=latest docker compose -f docs/vcsim/docker-compose.vcsim.yml up -d
 pip install pyVmomi
 python3 docs/vcsim/seed_vcsim.py --seed 42
 ```
-
 ## Architecture
 
 ```
@@ -89,23 +90,22 @@ See [docs/architecture/README.md](docs/architecture/README.md) for full data flo
 
 ## Docker Images
 
-| Image | Registry |
-|-------|----------|
 | Backend | `ghcr.io/davoudteimouri/vsphere-compliance-manager/backend` |
 | Frontend | `ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend` |
 
 ```bash
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:1.3.8-beta
-docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:1.3.8-beta
+# Use 'latest' or pin a specific version tag
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:latest
+docker pull ghcr.io/davoudteimouri/vsphere-compliance-manager/frontend:latest
 ```
 
 ## Deployment
 
 | Method | Guide |
 |--------|-------|
-| Docker Compose | [docs/deployment/README.md](docs/deployment/README.md) |
-| Kubernetes + Kustomize | [docs/deployment/README.md#kubernetes](docs/deployment/README.md#kubernetes) |
-| Helm Chart | [docs/deployment/README.md#helm-chart](docs/deployment/README.md#helm-chart) |
+| Docker Compose | [docs/deployment](docs/deployment/README.md) |
+| Kubernetes + Kustomize | [docs/deployment](docs/deployment/README.md#kubernetes) |
+| Helm Chart | [docs/deployment](docs/deployment/README.md#helm-chart) |
 
 ## Configuration
 
