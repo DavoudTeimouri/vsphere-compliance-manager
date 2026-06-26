@@ -38,7 +38,7 @@ def init_db() -> None:
     create_enums()
     # Only create tables if they don't already exist (avoids duplicate type errors)
     inspector = inspect(engine)
-    if not inspector.table_names():
+    if not inspector.get_table_names():
         Base.metadata.create_all(bind=engine)
 
 
