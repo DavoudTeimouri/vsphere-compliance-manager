@@ -13,6 +13,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### In Progress
+- Frontend rewrite with full API integration (analysis, reports, settings, dashboard)
+- Backend API hardening and additional test coverage
+
+---
+
+## [1.3.8-beta] — 2026-06-26
+
+### Fixed
+- **Build:** Removed unused imports causing TypeScript TS6133 build failure in CI
+  - `AnalysisPage.tsx`: removed `useEffect`, `CheckCircle`, `XCircle`
+  - `SettingsPage.tsx`: removed `Upload`
+- **README:** Complete rewrite with cleaner structure, concise layout, proper heading hierarchy
+- **ReportsPage:** Separated list and detail views with proper routing
+
+### Added
+- `AnalysisPage`: Full vCenter connection management (add, test, delete) with modal dialogs
+- `AnalysisPage`: Run Analysis form with vCenter/type selection wired to API
+- `SettingsPage`: Full pattern CRUD with modal, LDAP connection test button
+- `ReportDetailPage`: Findings table with severity filtering, DRS apply, storage move approval
+- `App.tsx`: Added `/reports/:id` route for report detail view
+
 ---
 
 ## [1.3.7-beta] — 2026-06-26
