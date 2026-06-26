@@ -234,7 +234,55 @@ helm status vcm -n vcm
 
 ---
 
-## Resetting Admin Password
+## Troubleshooting
+
+### "duplicate key value violates unique constraint pg_type_typname_nsp_index"
+
+**Cause:** The backend stores PostgreSQL ENUM types (`userrole`, `analysistype`, `analysisstatus`) in the database. If you change the image version but keep the same database volume, the old ENUM types may conflict with the new image's schema.
+
+**Fix:** Always remove volumes when switching versions:
+
+```powershell
+# Remove old containers and volumes for a clean start
+docker compose down -v
+# Then start fresh
+docker compose up -d
+```
+
+> **Important:** Before running `docker compose down -v`, ensure you have backed up any data you want to keep (e.g., analysis history, vCenter connections). Volumes are permanently deleted.
+
+### Login fails after restart
+
+**Cause:** The admin user was created in a previous run but the password hash may differ between versions.
+
+**Fix:** Reset the admin password:
+
+```powershell
+docker exec vcm-test-backend python scripts/reset_admin.py --password "VCM@admin2024!"
+```
+
+Or for a fresh start (removes all data):
+
+```powershell
+docker compose down -v
+docker compose up -d
+```
+
+### Changes not reflected after `git pull`
+
+Docker caches images. After pulling new code, rebuild:
+
+```powershell
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```
+
+Or use the `latest` image tag which is rebuilt on every release:
+
+```powershell
+$env:VCM_VERSION="latest"; docker compose up -d
+```
 
 If you cannot log in, reset the admin password from inside the container:
 
