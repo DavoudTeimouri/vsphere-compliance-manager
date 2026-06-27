@@ -10,22 +10,22 @@ router = APIRouter()
 
 @router.get("/summary")
 def get_summary(db: Session = Depends(get_db), _=Depends(get_current_user)):
-    total_vcenters = db.query(VCenterConnection).filter(VCenterConnection.is_active == True).count()
+    total_vcenters = db.query(VCenterConnection).filter(VCenterConnection.is_active .is_(True)).count()
     total_runs = db.query(AnalysisRun).count()
     last_run = db.query(AnalysisRun).order_by(AnalysisRun.started_at.desc()).first()
 
     open_findings = db.query(AnalysisFinding).filter(
-        AnalysisFinding.action_taken == False,
-        AnalysisFinding.is_actionable == True
+        AnalysisFinding.action_taken .is_(False),
+        AnalysisFinding.is_actionable.is_(True)
     ).count()
 
     critical = db.query(AnalysisFinding).filter(
         AnalysisFinding.severity == "critical",
-        AnalysisFinding.action_taken == False
+        AnalysisFinding.action_taken  .is_(False)
     ).count()
 
     by_type = db.query(AnalysisFinding.finding_type, func.count(AnalysisFinding.id))\
-                .filter(AnalysisFinding.action_taken == False)\
+                .filter(AnalysisFinding.action_taken .is_(False))\
                 .group_by(AnalysisFinding.finding_type).all()
 
     return {
@@ -41,7 +41,7 @@ def get_summary(db: Session = Depends(get_db), _=Depends(get_current_user)):
 @router.get("/recent-findings")
 def recent_findings(db: Session = Depends(get_db), _=Depends(get_current_user)):
     findings = db.query(AnalysisFinding)\
-                 .filter(AnalysisFinding.action_taken == False)\
+                 .filter(AnalysisFinding.action_taken .is_(False))\
                  .order_by(AnalysisFinding.created_at.desc()).limit(10).all()
     return [{"id": f.id, "finding_type": f.finding_type, "severity": f.severity,
              "vm_name": f.vm_name, "cluster_name": f.cluster_name,

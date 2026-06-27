@@ -67,7 +67,7 @@ def _do_ldap_login(payload: LoginRequest, db: Session) -> User:
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(
         User.username == payload.username,
-        User.is_active == True,
+        User.is_active.is_(True),
     ).first()
 
     # LDAP path

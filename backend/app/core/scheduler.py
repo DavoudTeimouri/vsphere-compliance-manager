@@ -15,7 +15,7 @@ def run_scheduled_analysis():
 
     db = SessionLocal()
     try:
-        connections = db.query(VCenterConnection).filter(VCenterConnection.is_active == True).all()
+        connections = db.query(VCenterConnection).filter(VCenterConnection.is_active .is_(True)).all()
         engine = AnalysisEngine()
         for conn in connections:
             run = AnalysisRun(
@@ -33,7 +33,7 @@ def run_scheduled_analysis():
                 inventory = svc.get_full_inventory()
                 svc.disconnect()
                 from app.models.models import PatternConfig
-                patterns = db.query(PatternConfig).filter(PatternConfig.is_active == True).all()
+                patterns = db.query(PatternConfig).filter(PatternConfig.is_active .is_(True)).all()
                 pattern_list = [{"pattern_type": p.pattern_type, "regex_pattern": p.regex_pattern} for p in patterns]
                 drs = engine.analyze_drs_compliance(inventory, pattern_list)
                 storage = engine.analyze_storage_compliance(inventory, pattern_list)

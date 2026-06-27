@@ -25,7 +25,7 @@ def _do_analysis(run_id: int, vcenter_id: int, analysis_type: AnalysisType):
     try:
         run = db.query(AnalysisRun).filter(AnalysisRun.id == run_id).first()
         conn = db.query(VCenterConnection).filter(VCenterConnection.id == vcenter_id).first()
-        patterns = db.query(PatternConfig).filter(PatternConfig.is_active == True).all()
+        patterns = db.query(PatternConfig).filter(PatternConfig.is_active .is_(True)).all()
         pattern_list = [{"pattern_type": p.pattern_type, "regex_pattern": p.regex_pattern} for p in patterns]
 
         try:
@@ -75,7 +75,7 @@ def list_runs(page: int = 1, per_page: int = 20, vcenter_id: Optional[int] = Non
 def trigger_analysis(payload: RunAnalysisRequest, background_tasks: BackgroundTasks,
                      db: Session = Depends(get_db), current_user: User = Depends(require_operator)):
     conn = db.query(VCenterConnection).filter(VCenterConnection.id == payload.vcenter_id,
-                                               VCenterConnection.is_active == True).first()
+                                               VCenterConnection.is_active .is_(True)).first()
     if not conn:
         raise HTTPException(status_code=404, detail="vCenter not found")
     run = AnalysisRun(vcenter_id=payload.vcenter_id, triggered_by=current_user.id,
@@ -129,7 +129,7 @@ def apply_drs(run_id: int, db: Session = Depends(get_db), current_user: User = D
         findings = db.query(AnalysisFinding).filter(
             AnalysisFinding.analysis_run_id == run_id,
             AnalysisFinding.finding_type == "drs_rule_needed",
-            AnalysisFinding.action_taken == False
+            AnalysisFinding.action_taken  .is_(False)
         ).all()
 
         created, failed = 0, 0
