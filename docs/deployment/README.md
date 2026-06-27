@@ -284,6 +284,28 @@ Or use the `latest` image tag which is rebuilt on every release:
 $env:VCM_VERSION="latest"; docker compose up -d
 ```
 
+### "How am I using the latest image?"
+
+To verify which image tag your containers are running:
+
+```powershell
+# Check the image currently used by the backend container
+docker inspect vcm-backend-1 --format='{{.Config.Image}}'
+```
+
+Output example: `ghcr.io/davoudteimouri/vsphere-compliance-manager/backend:latest`
+
+If you see a specific version tag (e.g. `1.3.6-beta`) instead of `latest`, you are running an old image. To always get the latest:
+
+```powershell
+# Pull the latest image explicitly
+docker compose pull
+docker compose up -d
+```
+
+Or check the GitHub Releases page to see available tags:
+https://github.com/DavoudTeimouri/vsphere-compliance-manager/releases
+
 If you cannot log in, reset the admin password from inside the container:
 
 ```bash
