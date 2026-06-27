@@ -22,6 +22,13 @@
 - A StorageClass supporting `ReadWriteOnce` for PostgreSQL and Redis
 - A StorageClass supporting `ReadWriteMany` for uploads PVC
 
+> **Always get the latest image:** Before starting, pull the newest image:
+> ```powershell
+> docker compose pull
+> docker compose up -d
+> ```
+> Without `pull`, Docker uses the locally cached image which may be outdated.
+
 ---
 
 ## Docker Compose
