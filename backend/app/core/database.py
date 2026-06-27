@@ -35,12 +35,23 @@ def create_enums() -> None:
         conn.commit()
 
 
+def _tables_exist() -> bool:
+    """Check if application tables exist in the database."""
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_schema = 'public' AND table_name = 'users'"
+            )).scalar()
+            return result is not None
+    except Exception:
+        return False
+
+
 def init_db() -> None:
     """Create enum types then all tables. Fully idempotent — safe every startup."""
     create_enums()
-    # Only create tables if they don't already exist (avoids duplicate type errors)
-    inspector = inspect(engine)
-    if not inspector.get_table_names():
+    if not _tables_exist():
         Base.metadata.create_all(bind=engine)
 
 
