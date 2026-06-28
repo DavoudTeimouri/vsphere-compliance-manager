@@ -17,25 +17,23 @@ Base = declarative_base()
 def create_enums() -> None:
     """Create PostgreSQL ENUM types if they do not already exist.
 
-    Uses a single atomic DO block with exception handler to handle
-    concurrent creation by multiple workers safely.
+    Each CREATE TYPE runs in its own DO $$ block with exception handler.
+    This is safe for concurrent workers — duplicate_object is caught per-type.
     """
     enums = [
         ("userrole",      ("admin", "operator", "viewer")),
         ("analysistype",  ("drs", "storage", "full")),
         ("analysisstatus",("pending", "running", "completed", "failed")),
     ]
-    # Build a single DO block that creates all enums with exception handling
-    enum_defs = []
-    for name, values in enums:
-        vals = ", ".join(f"'{v}'" for v in values)
-        enum_defs.append(
-            f"BEGIN CREATE TYPE {name} AS ENUM ({vals}); "
-            f"EXCEPTION WHEN duplicate_object THEN NULL; END;"
-        )
-    sql = "DO $$ " + " ".join(enum_defs) + " $$"
     with engine.connect() as conn:
-        conn.execute(text(sql))
+        for name, values in enums:
+            vals = ", ".join(f"'{v}'" for v in values)
+            conn.execute(text(
+                f"DO $$ BEGIN "
+                f"CREATE TYPE {name} AS ENUM ({vals}); "
+                f"EXCEPTION WHEN duplicate_object THEN NULL; "
+                f"END $$;"
+            ))
         conn.commit()
 
 
