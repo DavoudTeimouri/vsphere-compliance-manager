@@ -36,7 +36,10 @@ def create_enums() -> None:
 
 def init_db() -> None:
     """Create enum types then all tables. Fully idempotent — safe every startup."""
-    create_enums()
+    try:
+        create_enums()
+    except (IntegrityError, ProgrammingError):
+        pass  # Enums already exist — safe to ignore on restart
     try:
         Base.metadata.create_all(bind=engine)
     except (IntegrityError, ProgrammingError):
