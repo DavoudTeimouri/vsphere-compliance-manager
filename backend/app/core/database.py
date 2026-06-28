@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
@@ -15,11 +16,7 @@ Base = declarative_base()
 
 
 def create_enums() -> None:
-    """Create PostgreSQL ENUM types if they do not already exist.
-
-    Each CREATE TYPE runs in its own DO $$ block with exception handler.
-    This is safe for concurrent workers — duplicate_object is caught per-type.
-    """
+    """Create PostgreSQL ENUM types if they do not already exist."""
     enums = [
         ("userrole",      ("admin", "operator", "viewer")),
         ("analysistype",  ("drs", "storage", "full")),
@@ -37,25 +34,13 @@ def create_enums() -> None:
         conn.commit()
 
 
-def _tables_exist() -> bool:
-    """Check if application tables exist in the database."""
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(text(
-                "SELECT 1 FROM pg_catalog.pg_class c "
-                "JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace "
-                "WHERE n.nspname = 'public' AND c.relname = 'users'"
-            )).scalar()
-            return result is not None
-    except Exception:
-        return False
-
-
 def init_db() -> None:
     """Create enum types then all tables. Fully idempotent — safe every startup."""
     create_enums()
-    if not _tables_exist():
+    try:
         Base.metadata.create_all(bind=engine)
+    except (IntegrityError, ProgrammingError):
+        pass  # Tables already exist — safe to ignore on restart
 
 
 def get_db():
