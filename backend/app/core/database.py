@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text, inspect
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
@@ -15,19 +15,27 @@ Base = declarative_base()
 
 
 def create_enums() -> None:
-    """Create PostgreSQL ENUM types if they do not already exist."""
+    """Create PostgreSQL ENUM types if they do not already exist.
+
+    Uses a single atomic DO block with exception handler to handle
+    concurrent creation by multiple workers safely.
+    """
     enums = [
         ("userrole",      ("admin", "operator", "viewer")),
         ("analysistype",  ("drs", "storage", "full")),
         ("analysisstatus",("pending", "running", "completed", "failed")),
     ]
+    # Build a single DO block that creates all enums with exception handling
+    enum_defs = []
+    for name, values in enums:
+        vals = ", ".join(f"'{v}'" for v in values)
+        enum_defs.append(
+            f"BEGIN CREATE TYPE {name} AS ENUM ({vals}); "
+            f"EXCEPTION WHEN duplicate_object THEN NULL; END;"
+        )
+    sql = "DO $$ " + " ".join(enum_defs) + " $$"
     with engine.connect() as conn:
-        for name, values in enums:
-            # PostgreSQL: CREATE TYPE IF NOT EXISTS (available since PG 9.5)
-            vals = ", ".join(f"'{v}'" for v in values)
-            conn.execute(text(
-                f"CREATE TYPE IF NOT EXISTS {name} AS ENUM ({vals})"
-            ))
+        conn.execute(text(sql))
         conn.commit()
 
 
