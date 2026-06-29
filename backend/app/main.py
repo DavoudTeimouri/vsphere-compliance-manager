@@ -13,49 +13,68 @@ setup_logging()
 logger = get_logger("main")
 
 
-def seed_initial_data() -> None:
-    """Create admin user and default patterns/settings on first startup."""
-    from app.core.database import SessionLocal
+def _ensure_admin_user(db) -> None:
+    """Create admin user if it does not exist. Idempotent."""
     from app.core.security import get_password_hash
     from app.core.config import settings as cfg
-    from app.models.models import User, UserRole, PatternConfig, AppSettings
+    from app.models.models import User, UserRole
+    exists = db.query(User).filter(User.username == cfg.ADMIN_USERNAME).first()
+    if not exists:
+        db.add(User(
+            username=cfg.ADMIN_USERNAME,
+            hashed_password=get_password_hash(cfg.ADMIN_PASSWORD),
+            email=cfg.ADMIN_EMAIL,
+            full_name="Administrator",
+            role=UserRole.admin,
+            is_active=True,
+        ))
+        db.commit()
+        logger.info("Admin user created", extra={"username": cfg.ADMIN_USERNAME})
 
+
+def _ensure_patterns(db) -> None:
+    """Create default patterns if they do not exist. Idempotent."""
+    from app.models.models import PatternConfig
+    patterns = [
+        {"name": "Web Servers",    "pattern_type": "vm_name",   "regex_pattern": r"^(WEB)-"},
+        {"name": "App Servers",    "pattern_type": "vm_name",   "regex_pattern": r"^(APP)-"},
+        {"name": "DB Servers",     "pattern_type": "vm_name",   "regex_pattern": r"^(DB)-"},
+        {"name": "Cache Servers",  "pattern_type": "vm_name",   "regex_pattern": r"^(CACHE)-"},
+        {"name": "Proxy Servers",  "pattern_type": "vm_name",   "regex_pattern": r"^(PROXY)-"},
+        {"name": "Worker Servers", "pattern_type": "vm_name",   "regex_pattern": r"^(WORKER)-"},
+        {"name": "Prod DS",        "pattern_type": "datastore", "regex_pattern": r"^(DS-PROD)-"},
+        {"name": "DR DS",          "pattern_type": "datastore", "regex_pattern": r"^(DS-DR)-"},
+    ]
+    for p in patterns:
+        if not db.query(PatternConfig).filter(PatternConfig.name == p["name"]).first():
+            db.add(PatternConfig(**p, is_active=True))
+
+
+def _ensure_settings(db) -> None:
+    """Create default settings if they do not exist. Idempotent."""
+    from app.models.models import AppSettings
+    defaults = [
+        {"key": "analysis_cron",   "plain_value": "0 2 * * *"},
+        {"key": "drs_role_prefix", "plain_value": "VCM-AAR"},
+        {"key": "app_title",       "plain_value": "vSphere Compliance Manager"},
+    ]
+    for s in defaults:
+        if not db.query(AppSettings).filter(AppSettings.key == s["key"]).first():
+            db.add(AppSettings(**s))
+
+
+def seed_initial_data() -> None:
+    """Create admin user and default patterns/settings on first startup.
+
+    Each step (admin, patterns, settings) is independent and committed
+    separately so a failure in one does not prevent the others.
+    """
+    from app.core.database import SessionLocal
     db = SessionLocal()
     try:
-        if not db.query(User).filter(User.username == cfg.ADMIN_USERNAME).first():
-            db.add(User(
-                username=cfg.ADMIN_USERNAME,
-                hashed_password=get_password_hash(cfg.ADMIN_PASSWORD),
-                email=cfg.ADMIN_EMAIL,
-                full_name="Administrator",
-                role=UserRole.admin,
-                is_active=True,
-            ))
-            db.commit()
-            logger.info("Admin user created", extra={"username": cfg.ADMIN_USERNAME})
-
-        patterns = [
-            {"name": "Web Servers",    "pattern_type": "vm_name",   "regex_pattern": r"^(WEB)-"},
-            {"name": "App Servers",    "pattern_type": "vm_name",   "regex_pattern": r"^(APP)-"},
-            {"name": "DB Servers",     "pattern_type": "vm_name",   "regex_pattern": r"^(DB)-"},
-            {"name": "Cache Servers",  "pattern_type": "vm_name",   "regex_pattern": r"^(CACHE)-"},
-            {"name": "Proxy Servers",  "pattern_type": "vm_name",   "regex_pattern": r"^(PROXY)-"},
-            {"name": "Worker Servers", "pattern_type": "vm_name",   "regex_pattern": r"^(WORKER)-"},
-            {"name": "Prod DS",        "pattern_type": "datastore", "regex_pattern": r"^(DS-PROD)-"},
-            {"name": "DR DS",          "pattern_type": "datastore", "regex_pattern": r"^(DS-DR)-"},
-        ]
-        for p in patterns:
-            if not db.query(PatternConfig).filter(PatternConfig.name == p["name"]).first():
-                db.add(PatternConfig(**p, is_active=True))
-
-        for s in [
-            {"key": "analysis_cron",   "plain_value": "0 2 * * *"},
-            {"key": "drs_role_prefix", "plain_value": "VCM-AAR"},
-            {"key": "app_title",       "plain_value": "vSphere Compliance Manager"},
-        ]:
-            if not db.query(AppSettings).filter(AppSettings.key == s["key"]).first():
-                db.add(AppSettings(**s))
-
+        _ensure_admin_user(db)
+        _ensure_patterns(db)
+        _ensure_settings(db)
         db.commit()
         logger.info("Seed complete")
     except Exception as e:

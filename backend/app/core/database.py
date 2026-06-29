@@ -24,26 +24,33 @@ def create_enums() -> None:
     ]
     with engine.connect() as conn:
         for name, values in enums:
-            vals = ", ".join(f"'{v}'" for v in values)
-            conn.execute(text(
-                f"DO $$ BEGIN "
-                f"CREATE TYPE {name} AS ENUM ({vals}); "
-                f"EXCEPTION WHEN duplicate_object THEN NULL; "
-                f"END $$;"
-            ))
+            exists = conn.execute(text(
+                f"SELECT 1 FROM pg_type WHERE typname = '{name}'"
+            )).scalar()
+            if not exists:
+                vals = ", ".join(f"'{v}'" for v in values)
+                conn.execute(text(
+                    f"CREATE TYPE {name} AS ENUM ({vals})"
+                ))
         conn.commit()
+
+
+def _table_exists(table_name: str) -> bool:
+    """Check if a specific table exists in the public schema."""
+    with engine.connect() as conn:
+        result = conn.execute(text(
+            "SELECT 1 FROM pg_catalog.pg_class c "
+            "JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace "
+            "WHERE n.nspname = 'public' AND c.relname = :table"
+        ), {"table": table_name}).scalar()
+        return result is not None
 
 
 def init_db() -> None:
     """Create enum types then all tables. Fully idempotent — safe every startup."""
-    try:
-        create_enums()
-    except (IntegrityError, ProgrammingError):
-        pass  # Enums already exist — safe to ignore on restart
-    try:
+    create_enums()
+    if not _table_exists("users"):
         Base.metadata.create_all(bind=engine)
-    except (IntegrityError, ProgrammingError):
-        pass  # Tables already exist — safe to ignore on restart
 
 
 def get_db():
